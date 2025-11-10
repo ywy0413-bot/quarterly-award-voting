@@ -3,63 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Award 평가 관리자</title>
+    <title>Award 평가하기</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .star {
+            cursor: pointer;
+            font-size: 2.5rem;
+            color: #d1d5db;
+            transition: color 0.2s;
+        }
+        .star.active {
+            color: #fbbf24;
+        }
+        .star:hover {
+            color: #fbbf24;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h1 class="text-3xl font-bold text-indigo-600 mb-8">🏆 Award 평가 관리자</h1>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <h1 class="text-3xl font-bold text-center text-indigo-600 mb-8">🏆 Award 평가하기</h1>
             
-            <!-- 발표 추가 폼 -->
-            <div class="bg-indigo-50 rounded-lg p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">새 발표 추가</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
-                        <input type="text" id="titleInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 고객 경험 개선 프로젝트">
-                    </div>
+            <div id="loadingState" class="text-center py-12">
+                <p class="text-gray-600">평가 정보를 불러오는 중...</p>
+            </div>
+
+            <div id="noAwardState" class="hidden text-center py-12">
+                <p class="text-xl text-gray-600">현재 진행 중인 평가가 없습니다</p>
+                <p class="text-sm text-gray-400 mt-2">관리자가 평가를 시작할 때까지 기다려주세요</p>
+            </div>
+
+            <div id="evaluationForm" class="hidden">
+                <div class="bg-indigo-50 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4" id="awardTitle"></h2>
                     
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">👑 Impact Maker</label>
-                        <input type="text" id="impactMakerInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 김철수, 이영희">
+                    <div class="space-y-2 text-sm">
+                        <div>
+                            <span class="font-semibold text-indigo-600">👑 Impact Maker:</span>
+                            <span id="impactMaker" class="text-gray-700 ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-indigo-600">💪 Core Member:</span>
+                            <span id="coreMember" class="text-gray-700 ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-indigo-600">✨ Special Thanks:</span>
+                            <span id="specialThanks" class="text-gray-700 ml-2"></span>
+                        </div>
                     </div>
-                    
+                </div>
+
+                <div class="space-y-8">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">💪 Core Member</label>
-                        <input type="text" id="coreMemberInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 박민수, 정수진">
+                        <label class="block text-lg font-semibold text-gray-800 mb-4">
+                            Q1. 이 Award의 영향력은?
+                        </label>
+                        <div class="flex justify-center gap-2 mb-4" id="starRating">
+                            <span class="star" data-value="1">⭐</span>
+                            <span class="star" data-value="2">⭐</span>
+                            <span class="star" data-value="3">⭐</span>
+                            <span class="star" data-value="4">⭐</span>
+                            <span class="star" data-value="5">⭐</span>
+                        </div>
+                        <button id="dontKnowImpact" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg transition">
+                            잘 모르겠음
+                        </button>
                     </div>
-                    
+
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">✨ Special Thanks</label>
-                        <input type="text" id="specialThanksInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 최호영, 강지은">
+                        <label class="block text-lg font-semibold text-gray-800 mb-4">
+                            Q2. 이 Award의 유형은?
+                        </label>
+                        <div class="space-y-3">
+                            <button class="award-type w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 text-gray-700 py-3 rounded-lg transition" data-type="노력형">
+                                💪 노력형
+                            </button>
+                            <button class="award-type w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 text-gray-700 py-3 rounded-lg transition" data-type="혁신형">
+                                🚀 혁신형
+                            </button>
+                            <button class="award-type w-full bg-white border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 text-gray-700 py-3 rounded-lg transition" data-type="창조형">
+                                🎨 창조형
+                            </button>
+                            <button class="award-type w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition" data-type="잘 모르겠음">
+                                ❓ 잘 모르겠음
+                            </button>
+                        </div>
                     </div>
-                    
-                    <button id="addAwardBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">
-                        발표 추가하기
+
+                    <button id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg transition text-lg">
+                        평가 제출하기
                     </button>
                 </div>
             </div>
-            
-            <!-- 발표 목록 -->
-            <div>
-                <h2 class="text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
-                <div id="awardsList" class="space-y-4">
-                    <p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>
-                </div>
-            </div>
-            
-            <!-- 평가 데이터 다운로드 -->
-            <div class="mt-8 pt-8 border-t">
-                <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
-                    <span>📥</span>
-                    <span>평가 데이터 다운로드 (CSV)</span>
+
+            <div id="successState" class="hidden text-center py-12">
+                <div class="text-6xl mb-4">✅</div>
+                <p class="text-2xl font-bold text-green-600 mb-2">평가 완료!</p>
+                <p class="text-gray-600">소중한 의견 감사합니다</p>
+                <button id="newEvaluationBtn" class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg">
+                    다시 평가하기
                 </button>
             </div>
         </div>
     </div>
 
     <script>
+        let selectedRating = 0;
+        let selectedType = '';
+        let currentAwardId = null;
+
         function getState() {
             return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[]}');
         }
@@ -68,149 +121,105 @@
             localStorage.setItem('awardVotingState', JSON.stringify(state));
         }
 
-        // 발표 추가
-        document.getElementById('addAwardBtn').addEventListener('click', () => {
-            const title = document.getElementById('titleInput').value.trim();
-            const impactMaker = document.getElementById('impactMakerInput').value.trim();
-            const coreMember = document.getElementById('coreMemberInput').value.trim();
-            const specialThanks = document.getElementById('specialThanksInput').value.trim();
-
-            if (!title) {
-                alert('제목을 입력해주세요!');
-                return;
-            }
-
-            const state = getState();
-            const newAward = {
-                id: Date.now().toString(),
-                title,
-                impactMaker,
-                coreMember,
-                specialThanks,
-                isActive: false,
-                createdAt: new Date().toISOString()
-            };
-
-            state.awards.push(newAward);
-            saveState(state);
-
-            document.getElementById('titleInput').value = '';
-            document.getElementById('impactMakerInput').value = '';
-            document.getElementById('coreMemberInput').value = '';
-            document.getElementById('specialThanksInput').value = '';
-
-            alert('발표가 추가되었습니다!');
-            loadAwards();
+        // 별점 선택
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.dataset.value);
+                updateStars();
+            });
         });
 
-        // 발표 목록 불러오기
-        function loadAwards() {
-            const state = getState();
-            const awardsList = document.getElementById('awardsList');
-            
-            if (state.awards.length === 0) {
-                awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
-                return;
-            }
-
-            awardsList.innerHTML = '';
-            
-            state.awards.forEach(award => {
-                const awardElement = document.createElement('div');
-                awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
-                
-                awardElement.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
-                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
-                            ${award.isActive ? '✅ 평가 진행 중' : '대기'}
-                        </span>
-                    </div>
-                    <div class="text-sm text-gray-600 space-y-1 mb-4">
-                        <p><span class="font-semibold">👑 Impact Maker:</span> ${award.impactMaker || '-'}</p>
-                        <p><span class="font-semibold">💪 Core Member:</span> ${award.coreMember || '-'}</p>
-                        <p><span class="font-semibold">✨ Special Thanks:</span> ${award.specialThanks || '-'}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleActive('${award.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
-                            ${award.isActive ? '평가 종료' : '평가 시작'}
-                        </button>
-                        <button onclick="deleteAward('${award.id}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
-                            삭제
-                        </button>
-                    </div>
-                `;
-                
-                awardsList.appendChild(awardElement);
+        function updateStars() {
+            document.querySelectorAll('.star').forEach((star, index) => {
+                if (index < selectedRating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
             });
         }
 
-        // 평가 시작/종료
-        window.toggleActive = (awardId, currentStatus) => {
-            const state = getState();
-            
-            // 모든 발표를 비활성화
-            state.awards.forEach(award => {
-                award.isActive = false;
+        // 잘 모르겠음 (영향력)
+        document.getElementById('dontKnowImpact').addEventListener('click', () => {
+            selectedRating = -1;
+            document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+        });
+
+        // Award 유형 선택
+        document.querySelectorAll('.award-type').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedType = btn.dataset.type;
+                document.querySelectorAll('.award-type').forEach(b => {
+                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    b.classList.add('border-gray-200', 'bg-white');
+                });
+                btn.classList.remove('border-gray-200', 'bg-white');
+                btn.classList.add('border-indigo-500', 'bg-indigo-50');
             });
+        });
 
-            // 선택한 발표만 활성화 (종료가 아닌 경우)
-            if (!currentStatus) {
-                const award = state.awards.find(a => a.id === awardId);
-                if (award) award.isActive = true;
-            }
-
-            saveState(state);
-            loadAwards();
-        };
-
-        // 발표 삭제
-        window.deleteAward = (awardId) => {
-            if (!confirm('정말 삭제하시겠습니까?')) return;
-
+        // 현재 평가 중인 Award 가져오기
+        function loadCurrentAward() {
             const state = getState();
-            state.awards = state.awards.filter(a => a.id !== awardId);
-            saveState(state);
-            
-            alert('삭제되었습니다.');
-            loadAwards();
-        };
+            const currentAward = state.awards.find(a => a.isActive);
 
-        // CSV 다운로드
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            const state = getState();
-            
-            if (state.evaluations.length === 0) {
-                alert('아직 평가 데이터가 없습니다.');
+            if (!currentAward) {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('noAwardState').classList.remove('hidden');
+                document.getElementById('evaluationForm').classList.add('hidden');
                 return;
             }
 
-            const awards = {};
-            state.awards.forEach(award => {
-                awards[award.id] = award.title;
+            currentAwardId = currentAward.id;
+            document.getElementById('awardTitle').textContent = currentAward.title;
+            document.getElementById('impactMaker').textContent = currentAward.impactMaker || '-';
+            document.getElementById('coreMember').textContent = currentAward.coreMember || '-';
+            document.getElementById('specialThanks').textContent = currentAward.specialThanks || '-';
+
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('noAwardState').classList.add('hidden');
+            document.getElementById('evaluationForm').classList.remove('hidden');
+            document.getElementById('successState').classList.add('hidden');
+        }
+
+        // 평가 제출
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            if (selectedRating === 0 || !selectedType) {
+                alert('모든 문항에 답변해주세요!');
+                return;
+            }
+
+            const state = getState();
+
+            state.evaluations.push({
+                awardId: currentAwardId,
+                rating: selectedRating,
+                type: selectedType,
+                timestamp: new Date().toISOString()
             });
 
-            let csv = '\uFEFFAward 제목,영향력 점수,Award 유형,평가 시간\n';
+            saveState(state);
 
-            state.evaluations.forEach(eval => {
-                const awardTitle = awards[eval.awardId] || '알 수 없음';
-                const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
-                const timestamp = new Date(eval.timestamp).toLocaleString('ko-KR');
-                
-                csv += `"${awardTitle}","${rating}","${eval.type}","${timestamp}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `award_evaluations_${new Date().toISOString().split('T')[0]}.csv`);
-            link.click();
+            document.getElementById('evaluationForm').classList.add('hidden');
+            document.getElementById('successState').classList.remove('hidden');
         });
 
-        // 1초마다 새로고침
-        setInterval(loadAwards, 1000);
-        loadAwards();
+        // 다시 평가하기
+        document.getElementById('newEvaluationBtn').addEventListener('click', () => {
+            selectedRating = 0;
+            selectedType = '';
+            updateStars();
+            document.querySelectorAll('.award-type').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                b.classList.add('border-gray-200', 'bg-white');
+            });
+            document.getElementById('successState').classList.add('hidden');
+            loadCurrentAward();
+        });
+
+        // 1초마다 새로운 Award 확인
+        setInterval(loadCurrentAward, 1000);
+        loadCurrentAward();
     </script>
 </body>
 </html>
