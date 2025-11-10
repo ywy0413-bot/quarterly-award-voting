@@ -59,24 +59,17 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    <script>
+        function getState() {
+            return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[]}');
+        }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC23FHBCtNPXXekdPgeYJZOyHU8SwIHWU",
-            authDomain: "quarterly-award-voting.firebaseapp.com",
-            projectId: "quarterly-award-voting",
-            storageBucket: "quarterly-award-voting.firebasestorage.app",
-            messagingSenderId: "1057289910549",
-            appId: "1:1057289910549:web:e0d79116ad23e3f670911c"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        function saveState(state) {
+            localStorage.setItem('awardVotingState', JSON.stringify(state));
+        }
 
         // 발표 추가
-        document.getElementById('addAwardBtn').addEventListener('click', async () => {
+        document.getElementById('addAwardBtn').addEventListener('click', () => {
             const title = document.getElementById('titleInput').value.trim();
             const impactMaker = document.getElementById('impactMakerInput').value.trim();
             const coreMember = document.getElementById('coreMemberInput').value.trim();
@@ -87,45 +80,42 @@
                 return;
             }
 
-            try {
-                await addDoc(collection(db, 'awards'), {
-                    title,
-                    impactMaker,
-                    coreMember,
-                    specialThanks,
-                    isActive: false,
-                    createdAt: new Date()
-                });
+            const state = getState();
+            const newAward = {
+                id: Date.now().toString(),
+                title,
+                impactMaker,
+                coreMember,
+                specialThanks,
+                isActive: false,
+                createdAt: new Date().toISOString()
+            };
 
-                document.getElementById('titleInput').value = '';
-                document.getElementById('impactMakerInput').value = '';
-                document.getElementById('coreMemberInput').value = '';
-                document.getElementById('specialThanksInput').value = '';
+            state.awards.push(newAward);
+            saveState(state);
 
-                alert('발표가 추가되었습니다!');
-                loadAwards();
-            } catch (error) {
-                console.error('Error:', error);
-                alert('발표 추가 중 오류가 발생했습니다.');
-            }
+            document.getElementById('titleInput').value = '';
+            document.getElementById('impactMakerInput').value = '';
+            document.getElementById('coreMemberInput').value = '';
+            document.getElementById('specialThanksInput').value = '';
+
+            alert('발표가 추가되었습니다!');
+            loadAwards();
         });
 
         // 발표 목록 불러오기
-        async function loadAwards() {
-            const q = query(collection(db, 'awards'), orderBy('createdAt', 'desc'));
-            const snapshot = await getDocs(q);
-            
+        function loadAwards() {
+            const state = getState();
             const awardsList = document.getElementById('awardsList');
             
-            if (snapshot.empty) {
+            if (state.awards.length === 0) {
                 awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
                 return;
             }
 
             awardsList.innerHTML = '';
             
-            snapshot.forEach(doc => {
-                const award = doc.data();
+            state.awards.forEach(award => {
                 const awardElement = document.createElement('div');
                 awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
                 
@@ -133,7 +123,7 @@
                     <div class="flex justify-between items-start mb-2">
                         <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
                         <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
-                            ${award.isActive ? '평가 진행 중' : '대기'}
+                            ${award.isActive ? '✅ 평가 진행 중' : '대기'}
                         </span>
                     </div>
                     <div class="text-sm text-gray-600 space-y-1 mb-4">
@@ -142,10 +132,10 @@
                         <p><span class="font-semibold">✨ Special Thanks:</span> ${award.specialThanks || '-'}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="toggleActive('${doc.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
+                        <button onclick="toggleActive('${award.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
                             ${award.isActive ? '평가 종료' : '평가 시작'}
                         </button>
-                        <button onclick="deleteAward('${doc.id}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
+                        <button onclick="deleteAward('${award.id}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
                             삭제
                         </button>
                     </div>
@@ -156,75 +146,70 @@
         }
 
         // 평가 시작/종료
-        window.toggleActive = async (awardId, currentStatus) => {
-            try {
-                // 다른 모든 발표를 비활성화
-                const snapshot = await getDocs(collection(db, 'awards'));
-                const updatePromises = snapshot.docs.map(doc => 
-                    updateDoc(doc.ref, { isActive: false })
-                );
-                await Promise.all(updatePromises);
+        window.toggleActive = (awardId, currentStatus) => {
+            const state = getState();
+            
+            // 모든 발표를 비활성화
+            state.awards.forEach(award => {
+                award.isActive = false;
+            });
 
-                // 선택한 발표만 활성화 (종료가 아닌 경우)
-                if (!currentStatus) {
-                    await updateDoc(doc(db, 'awards', awardId), { isActive: true });
-                }
-
-                loadAwards();
-            } catch (error) {
-                console.error('Error:', error);
-                alert('상태 변경 중 오류가 발생했습니다.');
+            // 선택한 발표만 활성화 (종료가 아닌 경우)
+            if (!currentStatus) {
+                const award = state.awards.find(a => a.id === awardId);
+                if (award) award.isActive = true;
             }
+
+            saveState(state);
+            loadAwards();
         };
 
         // 발표 삭제
-        window.deleteAward = async (awardId) => {
+        window.deleteAward = (awardId) => {
             if (!confirm('정말 삭제하시겠습니까?')) return;
 
-            try {
-                await deleteDoc(doc(db, 'awards', awardId));
-                alert('삭제되었습니다.');
-                loadAwards();
-            } catch (error) {
-                console.error('Error:', error);
-                alert('삭제 중 오류가 발생했습니다.');
-            }
+            const state = getState();
+            state.awards = state.awards.filter(a => a.id !== awardId);
+            saveState(state);
+            
+            alert('삭제되었습니다.');
+            loadAwards();
         };
 
         // CSV 다운로드
-        document.getElementById('downloadBtn').addEventListener('click', async () => {
-            try {
-                const awardsSnapshot = await getDocs(collection(db, 'awards'));
-                const evaluationsSnapshot = await getDocs(collection(db, 'evaluations'));
-
-                const awards = {};
-                awardsSnapshot.forEach(doc => {
-                    awards[doc.id] = doc.data().title;
-                });
-
-                let csv = 'Award 제목,영향력 점수,Award 유형,평가 시간\n';
-
-                evaluationsSnapshot.forEach(doc => {
-                    const eval = doc.data();
-                    const awardTitle = awards[eval.awardId] || '알 수 없음';
-                    const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
-                    const timestamp = eval.timestamp?.toDate().toLocaleString('ko-KR') || '';
-                    
-                    csv += `"${awardTitle}","${rating}","${eval.type}","${timestamp}"\n`;
-                });
-
-                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `award_evaluations_${new Date().toISOString().split('T')[0]}.csv`);
-                link.click();
-            } catch (error) {
-                console.error('Error:', error);
-                alert('다운로드 중 오류가 발생했습니다.');
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const state = getState();
+            
+            if (state.evaluations.length === 0) {
+                alert('아직 평가 데이터가 없습니다.');
+                return;
             }
+
+            const awards = {};
+            state.awards.forEach(award => {
+                awards[award.id] = award.title;
+            });
+
+            let csv = '\uFEFFAward 제목,영향력 점수,Award 유형,평가 시간\n';
+
+            state.evaluations.forEach(eval => {
+                const awardTitle = awards[eval.awardId] || '알 수 없음';
+                const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
+                const timestamp = new Date(eval.timestamp).toLocaleString('ko-KR');
+                
+                csv += `"${awardTitle}","${rating}","${eval.type}","${timestamp}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `award_evaluations_${new Date().toISOString().split('T')[0]}.csv`);
+            link.click();
         });
 
+        // 1초마다 새로고침
+        setInterval(loadAwards, 1000);
         loadAwards();
     </script>
 </body>
