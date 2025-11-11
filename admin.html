@@ -34,7 +34,7 @@
                         로그아웃
                     </button>
                 </div>
-                
+
                 <!-- 데이터 마이그레이션 섹션 -->
                 <div id="migrationSection" class="hidden bg-yellow-50 rounded-lg p-4 md:p-6 mb-6 md:mb-8 border-2 border-yellow-300">
                     <h2 class="text-lg md:text-xl font-bold text-yellow-800 mb-4">📦 기존 데이터 발견!</h2>
@@ -48,7 +48,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- 사용자 등록 섹션 -->
                 <div class="bg-green-50 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
                     <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">👥 사용자 등록</h2>
@@ -67,7 +67,7 @@
                             사용자 추가
                         </button>
                     </div>
-                    
+
                     <!-- 등록된 사용자 목록 -->
                     <div class="mt-4">
                         <h3 class="text-sm font-semibold text-gray-700 mb-2">등록된 사용자 (<span id="userCount">0</span>명)</h3>
@@ -76,7 +76,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- 발표 추가 폼 -->
                 <div class="bg-indigo-50 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
                     <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">📋 새 발표 추가</h2>
@@ -97,33 +97,33 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
                             <input type="text" id="titleInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 고객 경험 개선 프로젝트">
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">👑 Impact Maker</label>
                             <input type="text" id="impactMakerInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 김철수, 이영희">
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">💪 Core Member</label>
                             <input type="text" id="coreMemberInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 박민수, 정수진">
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">✨ Special Thanks</label>
                             <input type="text" id="specialThanksInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 최호영, 강지은">
                         </div>
-                        
+
                         <button id="addAwardBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">
                             발표 추가하기
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- 발표 목록 -->
                 <div class="mb-6 md:mb-8">
                     <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
@@ -131,7 +131,7 @@
                         <p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>
                     </div>
                 </div>
-                
+
                 <!-- 결과 집계 -->
                 <div class="mt-8 pt-8 border-t">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
@@ -153,7 +153,7 @@
                         <p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>
                     </div>
                 </div>
-                
+
                 <!-- 평가 데이터 다운로드 -->
                 <div class="mt-8 pt-8 border-t">
                     <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
@@ -187,15 +187,30 @@
         let evaluationsCache = [];
         let isLoggedIn = false;
 
+        // 페이지 로드 시 로그인 화면 확인
+        console.log('Page loaded - Admin login screen should be visible');
+        console.log('Login screen element:', document.getElementById('adminLoginScreen'));
+        console.log('Main screen element:', document.getElementById('adminMainScreen'));
+
+        // Enter 키로 로그인
+        document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('adminLoginBtn').click();
+            }
+        });
+
         // 관리자 로그인
         document.getElementById('adminLoginBtn').addEventListener('click', () => {
             const password = document.getElementById('adminPasswordInput').value;
-            
+
+            console.log('Login button clicked');
+
             if (password === ADMIN_PASSWORD) {
                 isLoggedIn = true;
                 document.getElementById('adminLoginScreen').classList.add('hidden');
                 document.getElementById('adminMainScreen').classList.remove('hidden');
                 checkForLocalStorageData();
+                console.log('Login successful');
             } else {
                 alert('비밀번호가 올바르지 않습니다!');
             }
@@ -215,8 +230,8 @@
                 const oldData = localStorage.getItem('awardVotingState');
                 if (oldData) {
                     const parsed = JSON.parse(oldData);
-                    if ((parsed.users && parsed.users.length > 0) || 
-                        (parsed.awards && parsed.awards.length > 0) || 
+                    if ((parsed.users && parsed.users.length > 0) ||
+                        (parsed.awards && parsed.awards.length > 0) ||
                         (parsed.evaluations && parsed.evaluations.length > 0)) {
                         document.getElementById('migrationSection').classList.remove('hidden');
                     }
@@ -232,7 +247,7 @@
 
             try {
                 const oldData = JSON.parse(localStorage.getItem('awardVotingState'));
-                
+
                 // 사용자 이동
                 if (oldData.users && oldData.users.length > 0) {
                     for (const user of oldData.users) {
@@ -243,7 +258,7 @@
                         });
                     }
                 }
-                
+
                 // Award 이동
                 if (oldData.awards && oldData.awards.length > 0) {
                     for (const award of oldData.awards) {
@@ -259,7 +274,7 @@
                         });
                     }
                 }
-                
+
                 // 평가 이동
                 if (oldData.evaluations && oldData.evaluations.length > 0) {
                     for (const evaluation of oldData.evaluations) {
@@ -272,7 +287,7 @@
                         });
                     }
                 }
-                
+
                 alert('데이터 이동이 완료되었습니다!');
                 document.getElementById('migrationSection').classList.add('hidden');
                 localStorage.removeItem('awardVotingState');
@@ -330,10 +345,10 @@
         onSnapshot(collection(db, 'users'), (snapshot) => {
             console.log('Users snapshot:', snapshot.size);
             usersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
+
             const usersList = document.getElementById('usersList');
             const userCount = document.getElementById('userCount');
-            
+
             if (usersCache.length === 0) {
                 usersList.innerHTML = '<p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>';
                 userCount.textContent = '0';
@@ -342,7 +357,7 @@
 
             userCount.textContent = usersCache.length;
             usersList.innerHTML = '';
-            
+
             usersCache.forEach(user => {
                 const userElement = document.createElement('div');
                 userElement.className = 'flex justify-between items-center bg-white p-2 rounded border';
@@ -436,17 +451,17 @@
         function updateYearFilter() {
             const yearSet = new Set(awardsCache.map(a => a.year));
             const filterYear = document.getElementById('filterYear');
-            
+
             const currentValue = filterYear.value;
             filterYear.innerHTML = '<option value="">전체 연도</option>';
-            
+
             Array.from(yearSet).sort().forEach(year => {
                 const option = document.createElement('option');
                 option.value = year;
                 option.textContent = year + '년';
                 filterYear.appendChild(option);
             });
-            
+
             if (currentValue) {
                 filterYear.value = currentValue;
             }
@@ -459,18 +474,18 @@
         // 발표 목록 표시
         function loadAwards() {
             const awardsList = document.getElementById('awardsList');
-            
+
             if (awardsCache.length === 0) {
                 awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
                 return;
             }
 
             awardsList.innerHTML = '';
-            
+
             awardsCache.forEach(award => {
                 const awardElement = document.createElement('div');
                 awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
-                
+
                 awardElement.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div>
@@ -498,7 +513,7 @@
                         </button>
                     </div>
                 `;
-                
+
                 awardsList.appendChild(awardElement);
             });
         }
@@ -506,7 +521,7 @@
         // 평가 시작/종료
         window.toggleActive = async (awardId, currentStatus) => {
             try {
-                const updatePromises = awardsCache.map(award => 
+                const updatePromises = awardsCache.map(award =>
                     updateDoc(doc(db, 'awards', award.id), { isActive: false })
                 );
                 await Promise.all(updatePromises);
@@ -527,10 +542,10 @@
             try {
                 const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
                 const snapshot = await getDocs(q);
-                
+
                 const deletePromises = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
                 await Promise.all(deletePromises);
-                
+
                 alert('평가 데이터가 초기화되었습니다.');
             } catch (error) {
                 console.error('Error:', error);
@@ -556,7 +571,7 @@
             const resultsSection = document.getElementById('resultsSection');
             const filterYear = document.getElementById('filterYear').value;
             const filterQuarter = document.getElementById('filterQuarter').value;
-            
+
             if (evaluationsCache.length === 0) {
                 resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>';
                 return;
@@ -577,18 +592,18 @@
 
             resultsSection.innerHTML = '';
             let hasData = false;
-            
+
             filteredAwards.forEach(award => {
                 const awardEvals = evaluationsCache.filter(e => e.awardId === award.id);
-                
+
                 if (awardEvals.length === 0) return;
-                
+
                 hasData = true;
-                
+
                 const ratingDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, unknown: 0 };
                 let ratingSum = 0;
                 let ratingCount = 0;
-                
+
                 awardEvals.forEach(e => {
                     if (e.rating === -1) {
                         ratingDist.unknown++;
@@ -598,23 +613,23 @@
                         ratingCount++;
                     }
                 });
-                
+
                 const avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(2) : 0;
-                
+
                 const typeDist = {};
                 awardEvals.forEach(e => {
                     typeDist[e.type] = (typeDist[e.type] || 0) + 1;
                 });
-                
+
                 const resultCard = document.createElement('div');
                 resultCard.className = 'bg-blue-50 rounded-lg p-4 md:p-6 border-2 border-blue-200';
-                
+
                 resultCard.innerHTML = `
                     <div class="mb-4">
                         <span class="text-xs md:text-sm text-gray-600 font-semibold">${award.year} ${award.quarter}</span>
                         <h3 class="text-base md:text-lg font-bold text-gray-800">${award.title}</h3>
                     </div>
-                    
+
                     <div class="space-y-4">
                         <div class="bg-white rounded p-3">
                             <div class="flex justify-between items-center">
@@ -622,7 +637,7 @@
                                 <span class="text-base md:text-lg font-bold text-indigo-600">${awardEvals.length}명</span>
                             </div>
                         </div>
-                        
+
                         <div class="bg-white rounded p-3">
                             <div class="text-xs md:text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
                             <div class="space-y-1 text-xs md:text-sm">
@@ -644,7 +659,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="bg-white rounded p-3">
                             <div class="text-xs md:text-sm font-semibold text-gray-700 mb-2">⭐ 영향력 평가 (평균: ${avgRating}점)</div>
                             <div class="space-y-1 text-xs md:text-sm">
@@ -676,7 +691,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 resultsSection.appendChild(resultCard);
             });
 
@@ -703,7 +718,7 @@
                 const awardTitle = awards[eval.awardId] || '알 수 없음';
                 const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
                 const timestamp = eval.timestamp?.toDate ? eval.timestamp.toDate().toLocaleString('ko-KR') : new Date(eval.timestamp).toLocaleString('ko-KR');
-                
+
                 csv += `"${awardTitle}","${eval.userName}","${eval.type}","${rating}","${timestamp}"\n`;
             });
 
