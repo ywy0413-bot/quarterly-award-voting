@@ -8,16 +8,49 @@
     <style>
         .star {
             cursor: pointer;
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: #d1d5db;
-            transition: color 0.2s;
+            transition: all 0.3s ease;
             display: inline-block;
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+        .star:hover {
+            transform: scale(1.2);
+            filter: grayscale(0%);
+            opacity: 1;
         }
         .star.active {
             color: #fbbf24;
+            filter: grayscale(0%) drop-shadow(0 0 10px #fbbf24);
+            opacity: 1;
+            transform: scale(1.3);
+            animation: pulse 0.3s ease;
         }
-        .star:hover {
-            color: #fbbf24;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.3); }
+            50% { transform: scale(1.5); }
+        }
+        .star-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .selected-rating {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: bold;
+            margin-top: 1rem;
+            text-align: center;
+            min-height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -61,18 +94,19 @@
                 </button>
             </div>
 
-            <!-- 이미 평가 완료 -->
-            <div id="alreadyVotedState" class="hidden text-center py-12">
-                <div class="text-6xl mb-4">✅</div>
-                <p class="text-xl text-gray-700 font-bold mb-2">이미 평가하셨습니다</p>
-                <p class="text-gray-600">이 Award에 대한 평가를 이미 제출하셨어요</p>
-                <button id="logoutBtn4" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">
-                    로그아웃
-                </button>
-            </div>
-
             <!-- 평가 폼 -->
             <div id="evaluationForm" class="hidden">
+                <!-- 이미 평가 완료 알림 -->
+                <div id="alreadyVotedAlert" class="hidden mb-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">✅</span>
+                        <div>
+                            <p class="font-bold text-yellow-800">이미 평가 완료</p>
+                            <p class="text-sm text-yellow-700">이 Award에 대한 평가를 이미 제출하셨습니다</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-indigo-50 rounded-lg p-6 mb-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4" id="awardTitle"></h2>
                     
@@ -93,7 +127,7 @@
                 </div>
 
                 <div class="space-y-8">
-                    <!-- Q1: Award 유형 (순서 변경!) -->
+                    <!-- Q1: Award 유형 -->
                     <div>
                         <label class="block text-lg font-semibold text-gray-800 mb-4">
                             Q1. 이 Award의 유형은? <span class="text-red-500">*</span>
@@ -114,24 +148,29 @@
                         </div>
                     </div>
 
-                    <!-- Q2: 영향력 (순서 변경!) -->
+                    <!-- Q2: 영향력 -->
                     <div>
                         <label class="block text-lg font-semibold text-gray-800 mb-4">
                             Q2. 이 Award의 영향력은? <span class="text-red-500">*</span>
                         </label>
-                        <div class="flex justify-center gap-2 mb-4" id="starRating">
-                            <span class="star" data-value="1">⭐</span>
-                            <span class="star" data-value="2">⭐</span>
-                            <span class="star" data-value="3">⭐</span>
-                            <span class="star" data-value="4">⭐</span>
-                            <span class="star" data-value="5">⭐</span>
+                        <div class="star-container">
+                            <div class="flex justify-center gap-1" id="starRating">
+                                <span class="star" data-value="1">⭐</span>
+                                <span class="star" data-value="2">⭐</span>
+                                <span class="star" data-value="3">⭐</span>
+                                <span class="star" data-value="4">⭐</span>
+                                <span class="star" data-value="5">⭐</span>
+                            </div>
+                            <div class="selected-rating" id="ratingDisplay">
+                                별점을 선택해주세요
+                            </div>
                         </div>
-                        <button id="dontKnowImpact" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg transition">
+                        <button id="dontKnowImpact" class="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg transition">
                             잘 모르겠음
                         </button>
                     </div>
 
-                    <button id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg transition text-lg">
+                    <button id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-lg transition text-lg disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300">
                         평가 제출하기
                     </button>
                     
@@ -146,6 +185,7 @@
                 <div class="text-6xl mb-4">✅</div>
                 <p class="text-2xl font-bold text-green-600 mb-2">평가 완료!</p>
                 <p class="text-gray-600">소중한 의견 감사합니다</p>
+                <p class="text-sm text-gray-500 mt-4">다음 평가가 시작되면 자동으로 화면이 전환됩니다</p>
                 <button id="logoutBtn3" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">
                     로그아웃
                 </button>
@@ -159,6 +199,7 @@
         let currentAwardId = null;
         let currentUser = null;
         let currentAward = null;
+        let hasVoted = false;
 
         function getState() {
             return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[],"users":[]}');
@@ -221,6 +262,7 @@
         function logout() {
             currentUser = null;
             currentAward = null;
+            hasVoted = false;
             selectedRating = 0;
             selectedType = '';
             document.getElementById('userSelect').value = '';
@@ -228,11 +270,11 @@
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('noAwardState').classList.add('hidden');
-            document.getElementById('alreadyVotedState').classList.add('hidden');
             document.getElementById('evaluationForm').classList.add('hidden');
             document.getElementById('successState').classList.add('hidden');
             document.getElementById('mainTitle').textContent = '🏆 Award 평가하기';
             updateStars();
+            updateRatingDisplay();
             document.querySelectorAll('.award-type').forEach(b => {
                 b.classList.remove('border-indigo-500', 'bg-indigo-50');
                 b.classList.add('border-gray-200', 'bg-white');
@@ -242,14 +284,32 @@
         document.getElementById('logoutBtn1').addEventListener('click', logout);
         document.getElementById('logoutBtn2').addEventListener('click', logout);
         document.getElementById('logoutBtn3').addEventListener('click', logout);
-        document.getElementById('logoutBtn4').addEventListener('click', logout);
+
+        // 별점 표시 업데이트
+        function updateRatingDisplay() {
+            const display = document.getElementById('ratingDisplay');
+            if (selectedRating === -1) {
+                display.textContent = '❓ 잘 모르겠음';
+                display.style.background = 'rgba(156, 163, 175, 0.3)';
+            } else if (selectedRating > 0) {
+                const stars = '⭐'.repeat(selectedRating);
+                display.textContent = `${stars} ${selectedRating}점 선택됨`;
+                display.style.background = 'rgba(251, 191, 36, 0.3)';
+            } else {
+                display.textContent = '별점을 선택해주세요';
+                display.style.background = 'rgba(255,255,255,0.2)';
+            }
+        }
 
         // 별점 선택
         document.querySelectorAll('.star').forEach(star => {
             star.addEventListener('click', function(e) {
                 e.preventDefault();
+                if (hasVoted) return;
+                
                 selectedRating = parseInt(this.getAttribute('data-value'));
                 updateStars();
+                updateRatingDisplay();
             });
         });
 
@@ -266,14 +326,19 @@
         // 잘 모르겠음 (영향력)
         document.getElementById('dontKnowImpact').addEventListener('click', function(e) {
             e.preventDefault();
+            if (hasVoted) return;
+            
             selectedRating = -1;
             document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+            updateRatingDisplay();
         });
 
         // Award 유형 선택
         document.querySelectorAll('.award-type').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
+                if (hasVoted) return;
+                
                 selectedType = this.getAttribute('data-type');
                 document.querySelectorAll('.award-type').forEach(b => {
                     b.classList.remove('border-indigo-500', 'bg-indigo-50');
@@ -292,8 +357,8 @@
             if (!award) {
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('noAwardState').classList.remove('hidden');
-                document.getElementById('alreadyVotedState').classList.add('hidden');
                 document.getElementById('evaluationForm').classList.add('hidden');
+                document.getElementById('successState').classList.add('hidden');
                 document.getElementById('mainTitle').textContent = '🏆 Award 평가하기';
                 return;
             }
@@ -302,12 +367,18 @@
             document.getElementById('mainTitle').textContent = `🏆 ${award.year}년 ${award.quarter} Award 평가하기`;
 
             // 중복 투표 확인
-            if (hasAlreadyVoted(currentUser, award.id)) {
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('noAwardState').classList.add('hidden');
-                document.getElementById('alreadyVotedState').classList.remove('hidden');
-                document.getElementById('evaluationForm').classList.add('hidden');
-                return;
+            hasVoted = hasAlreadyVoted(currentUser, award.id);
+
+            // Award가 변경되었으면 입력 초기화
+            if (currentAwardId !== award.id) {
+                selectedRating = 0;
+                selectedType = '';
+                updateStars();
+                updateRatingDisplay();
+                document.querySelectorAll('.award-type').forEach(b => {
+                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    b.classList.add('border-gray-200', 'bg-white');
+                });
             }
 
             currentAwardId = award.id;
@@ -317,15 +388,33 @@
             document.getElementById('coreMember').textContent = award.coreMember || '-';
             document.getElementById('specialThanks').textContent = award.specialThanks || '-';
 
+            // 이미 평가한 경우 알림 표시 및 제출 버튼 비활성화
+            const submitBtn = document.getElementById('submitBtn');
+            const alreadyVotedAlert = document.getElementById('alreadyVotedAlert');
+            
+            if (hasVoted) {
+                alreadyVotedAlert.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.textContent = '이미 평가 완료';
+            } else {
+                alreadyVotedAlert.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '평가 제출하기';
+            }
+
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('noAwardState').classList.add('hidden');
-            document.getElementById('alreadyVotedState').classList.add('hidden');
             document.getElementById('evaluationForm').classList.remove('hidden');
             document.getElementById('successState').classList.add('hidden');
         }
 
         // 평가 제출
         document.getElementById('submitBtn').addEventListener('click', () => {
+            if (hasVoted) {
+                alert('이미 평가를 완료하셨습니다.');
+                return;
+            }
+
             // 필수 입력 검증
             if (!selectedType) {
                 alert('Award 유형을 선택해주세요!');
@@ -351,10 +440,29 @@
 
             document.getElementById('evaluationForm').classList.add('hidden');
             document.getElementById('successState').classList.remove('hidden');
+
+            // 3초 후 자동으로 다음 Award 확인
+            setTimeout(() => {
+                selectedRating = 0;
+                selectedType = '';
+                updateStars();
+                updateRatingDisplay();
+                document.querySelectorAll('.award-type').forEach(b => {
+                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    b.classList.add('border-gray-200', 'bg-white');
+                });
+                document.getElementById('successState').classList.add('hidden');
+                loadCurrentAward();
+            }, 3000);
         });
 
         // 1초마다 새로운 Award 확인 (로그인한 경우만)
         setInterval(() => {
+            if (currentUser && !document.getElementById('successState').classList.contains('hidden')) {
+                // 완료 화면에서는 체크하지 않음
+                return;
+            }
+            
             if (currentUser) {
                 loadCurrentAward();
             }
