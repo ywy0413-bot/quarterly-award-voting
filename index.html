@@ -185,7 +185,7 @@
                 <div class="text-6xl mb-4">✅</div>
                 <p class="text-2xl font-bold text-green-600 mb-2">평가 완료!</p>
                 <p class="text-gray-600">소중한 의견 감사합니다</p>
-                <p class="text-sm text-gray-500 mt-4">다음 평가가 시작되면 자동으로 화면이 전환됩니다</p>
+                <p class="text-sm text-gray-500 mt-4">관리자가 다음 평가를 시작하면 자동으로 화면이 전환됩니다</p>
                 <button id="logoutBtn3" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">
                     로그아웃
                 </button>
@@ -441,28 +441,19 @@
             document.getElementById('evaluationForm').classList.add('hidden');
             document.getElementById('successState').classList.remove('hidden');
 
-            // 3초 후 자동으로 다음 Award 확인
-            setTimeout(() => {
-                selectedRating = 0;
-                selectedType = '';
-                updateStars();
-                updateRatingDisplay();
-                document.querySelectorAll('.award-type').forEach(b => {
-                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
-                    b.classList.add('border-gray-200', 'bg-white');
-                });
-                document.getElementById('successState').classList.add('hidden');
-                loadCurrentAward();
-            }, 3000);
+            // 입력 초기화 (다음 Award를 위해)
+            selectedRating = 0;
+            selectedType = '';
+            updateStars();
+            updateRatingDisplay();
+            document.querySelectorAll('.award-type').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                b.classList.add('border-gray-200', 'bg-white');
+            });
         });
 
         // 1초마다 새로운 Award 확인 (로그인한 경우만)
         setInterval(() => {
-            if (currentUser && !document.getElementById('successState').classList.contains('hidden')) {
-                // 완료 화면에서는 체크하지 않음
-                return;
-            }
-            
             if (currentUser) {
                 loadCurrentAward();
             }
