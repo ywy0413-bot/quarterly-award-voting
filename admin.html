@@ -11,10 +11,55 @@
         <div class="bg-white rounded-2xl shadow-xl p-8">
             <h1 class="text-3xl font-bold text-indigo-600 mb-8">🏆 Award 평가 관리자</h1>
             
+            <!-- 사용자 등록 섹션 -->
+            <div class="bg-green-50 rounded-lg p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">👥 사용자 등록</h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">이름</label>
+                            <input type="text" id="userNameInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="예: 김철수">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">PIN 번호 (4자리)</label>
+                            <input type="text" id="userPinInput" maxlength="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="1234">
+                        </div>
+                    </div>
+                    <button id="addUserBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
+                        사용자 추가
+                    </button>
+                </div>
+                
+                <!-- 등록된 사용자 목록 -->
+                <div class="mt-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">등록된 사용자</h3>
+                    <div id="usersList" class="space-y-2 max-h-40 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 발표 추가 폼 -->
             <div class="bg-indigo-50 rounded-lg p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">새 발표 추가</h2>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📋 새 발표 추가</h2>
                 <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">연도</label>
+                            <input type="number" id="yearInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="2025" min="2020" max="2100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">분기</label>
+                            <select id="quarterInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">선택</option>
+                                <option value="Q1">Q1</option>
+                                <option value="Q2">Q2</option>
+                                <option value="Q3">Q3</option>
+                                <option value="Q4">Q4</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
                         <input type="text" id="titleInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 고객 경험 개선 프로젝트">
@@ -49,6 +94,14 @@
                 </div>
             </div>
             
+            <!-- 결과 집계 -->
+            <div class="mt-8 pt-8 border-t">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📊 결과 집계</h2>
+                <div id="resultsSection" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>
+                </div>
+            </div>
+            
             <!-- 평가 데이터 다운로드 -->
             <div class="mt-8 pt-8 border-t">
                 <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
@@ -61,19 +114,99 @@
 
     <script>
         function getState() {
-            return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[]}');
+            return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[],"users":[]}');
         }
 
         function saveState(state) {
             localStorage.setItem('awardVotingState', JSON.stringify(state));
         }
 
+        // 사용자 추가
+        document.getElementById('addUserBtn').addEventListener('click', () => {
+            const name = document.getElementById('userNameInput').value.trim();
+            const pin = document.getElementById('userPinInput').value.trim();
+
+            if (!name) {
+                alert('이름을 입력해주세요!');
+                return;
+            }
+
+            if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                alert('4자리 숫자 PIN을 입력해주세요!');
+                return;
+            }
+
+            const state = getState();
+            
+            // 중복 체크
+            if (state.users.some(u => u.name === name)) {
+                alert('이미 등록된 이름입니다!');
+                return;
+            }
+
+            state.users.push({ name, pin });
+            saveState(state);
+
+            document.getElementById('userNameInput').value = '';
+            document.getElementById('userPinInput').value = '';
+
+            alert('사용자가 추가되었습니다!');
+            loadUsers();
+        });
+
+        // 사용자 목록 불러오기
+        function loadUsers() {
+            const state = getState();
+            const usersList = document.getElementById('usersList');
+            
+            if (state.users.length === 0) {
+                usersList.innerHTML = '<p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>';
+                return;
+            }
+
+            usersList.innerHTML = '';
+            
+            state.users.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'flex justify-between items-center bg-white p-2 rounded border';
+                userElement.innerHTML = `
+                    <span class="text-sm">${user.name} (PIN: ${user.pin})</span>
+                    <button onclick="deleteUser('${user.name}')" class="text-red-500 hover:text-red-700 text-sm">삭제</button>
+                `;
+                usersList.appendChild(userElement);
+            });
+        }
+
+        // 사용자 삭제
+        window.deleteUser = (userName) => {
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+
+            const state = getState();
+            state.users = state.users.filter(u => u.name !== userName);
+            saveState(state);
+            
+            alert('삭제되었습니다.');
+            loadUsers();
+        };
+
         // 발표 추가
         document.getElementById('addAwardBtn').addEventListener('click', () => {
+            const year = document.getElementById('yearInput').value.trim();
+            const quarter = document.getElementById('quarterInput').value;
             const title = document.getElementById('titleInput').value.trim();
             const impactMaker = document.getElementById('impactMakerInput').value.trim();
             const coreMember = document.getElementById('coreMemberInput').value.trim();
             const specialThanks = document.getElementById('specialThanksInput').value.trim();
+
+            if (!year) {
+                alert('연도를 입력해주세요!');
+                return;
+            }
+
+            if (!quarter) {
+                alert('분기를 선택해주세요!');
+                return;
+            }
 
             if (!title) {
                 alert('제목을 입력해주세요!');
@@ -83,6 +216,8 @@
             const state = getState();
             const newAward = {
                 id: Date.now().toString(),
+                year,
+                quarter,
                 title,
                 impactMaker,
                 coreMember,
@@ -94,6 +229,8 @@
             state.awards.push(newAward);
             saveState(state);
 
+            document.getElementById('yearInput').value = '';
+            document.getElementById('quarterInput').value = '';
             document.getElementById('titleInput').value = '';
             document.getElementById('impactMakerInput').value = '';
             document.getElementById('coreMemberInput').value = '';
@@ -121,7 +258,10 @@
                 
                 awardElement.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                        <div>
+                            <span class="text-sm text-gray-500 font-semibold">${award.year} ${award.quarter}</span>
+                            <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                        </div>
                         <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
                             ${award.isActive ? '✅ 평가 진행 중' : '대기'}
                         </span>
@@ -176,6 +316,125 @@
             loadAwards();
         };
 
+        // 결과 집계 표시
+        function loadResults() {
+            const state = getState();
+            const resultsSection = document.getElementById('resultsSection');
+            
+            if (state.evaluations.length === 0) {
+                resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>';
+                return;
+            }
+
+            resultsSection.innerHTML = '';
+            
+            state.awards.forEach(award => {
+                const awardEvals = state.evaluations.filter(e => e.awardId === award.id);
+                
+                if (awardEvals.length === 0) return;
+                
+                // 별점 분포 계산
+                const ratingDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, unknown: 0 };
+                let ratingSum = 0;
+                let ratingCount = 0;
+                
+                awardEvals.forEach(e => {
+                    if (e.rating === -1) {
+                        ratingDist.unknown++;
+                    } else {
+                        ratingDist[e.rating]++;
+                        ratingSum += e.rating;
+                        ratingCount++;
+                    }
+                });
+                
+                const avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(2) : 0;
+                
+                // 유형별 분포 계산
+                const typeDist = {};
+                awardEvals.forEach(e => {
+                    typeDist[e.type] = (typeDist[e.type] || 0) + 1;
+                });
+                
+                // 결과 카드 생성
+                const resultCard = document.createElement('div');
+                resultCard.className = 'bg-blue-50 rounded-lg p-6 border-2 border-blue-200';
+                
+                resultCard.innerHTML = `
+                    <div class="mb-4">
+                        <span class="text-sm text-gray-600 font-semibold">${award.year} ${award.quarter}</span>
+                        <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- 평가 인원 -->
+                        <div class="bg-white rounded p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold text-gray-700">📋 평가 인원</span>
+                                <span class="text-lg font-bold text-indigo-600">${awardEvals.length}명</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 별점 분포 -->
+                        <div class="bg-white rounded p-3">
+                            <div class="text-sm font-semibold text-gray-700 mb-2">⭐ 영향력 평가 (평균: ${avgRating}점)</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span>⭐ 1점</span>
+                                    <span class="font-semibold">${ratingDist[1]}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>⭐⭐ 2점</span>
+                                    <span class="font-semibold">${ratingDist[2]}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>⭐⭐⭐ 3점</span>
+                                    <span class="font-semibold">${ratingDist[3]}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>⭐⭐⭐⭐ 4점</span>
+                                    <span class="font-semibold">${ratingDist[4]}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>⭐⭐⭐⭐⭐ 5점</span>
+                                    <span class="font-semibold">${ratingDist[5]}명</span>
+                                </div>
+                                <div class="flex justify-between text-gray-500">
+                                    <span>❓ 잘 모르겠음</span>
+                                    <span class="font-semibold">${ratingDist.unknown}명</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 유형별 평가 -->
+                        <div class="bg-white rounded p-3">
+                            <div class="text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span>💪 노력형</span>
+                                    <span class="font-semibold">${typeDist['노력형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>🚀 혁신형</span>
+                                    <span class="font-semibold">${typeDist['혁신형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>🎨 창조형</span>
+                                    <span class="font-semibold">${typeDist['창조형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between text-gray-500">
+                                    <span>❓ 잘 모르겠음</span>
+                                    <span class="font-semibold">${typeDist['잘 모르겠음'] || 0}명</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsSection.appendChild(resultCard);
+            });
+        }
+
         // CSV 다운로드
         document.getElementById('downloadBtn').addEventListener('click', () => {
             const state = getState();
@@ -187,17 +446,17 @@
 
             const awards = {};
             state.awards.forEach(award => {
-                awards[award.id] = award.title;
+                awards[award.id] = `${award.year} ${award.quarter} - ${award.title}`;
             });
 
-            let csv = '\uFEFFAward 제목,영향력 점수,Award 유형,평가 시간\n';
+            let csv = '\uFEFF연도-분기,Award 제목,평가자,Award 유형,영향력 점수,평가 시간\n';
 
             state.evaluations.forEach(eval => {
                 const awardTitle = awards[eval.awardId] || '알 수 없음';
                 const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
                 const timestamp = new Date(eval.timestamp).toLocaleString('ko-KR');
                 
-                csv += `"${awardTitle}","${rating}","${eval.type}","${timestamp}"\n`;
+                csv += `"${awardTitle}","${eval.userName}","${eval.type}","${rating}","${timestamp}"\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -209,8 +468,15 @@
         });
 
         // 1초마다 새로고침
-        setInterval(loadAwards, 1000);
+        setInterval(() => {
+            loadAwards();
+            loadUsers();
+            loadResults();
+        }, 1000);
+        
         loadAwards();
+        loadUsers();
+        loadResults();
     </script>
 </body>
 </html>
