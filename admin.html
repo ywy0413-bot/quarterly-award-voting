@@ -32,7 +32,7 @@
                 
                 <!-- 등록된 사용자 목록 -->
                 <div class="mt-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-2">등록된 사용자</h3>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">등록된 사용자 (<span id="userCount">0</span>명)</h3>
                     <div id="usersList" class="space-y-2 max-h-40 overflow-y-auto">
                         <p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>
                     </div>
@@ -96,7 +96,21 @@
             
             <!-- 결과 집계 -->
             <div class="mt-8 pt-8 border-t">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">📊 결과 집계</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">📊 결과 집계</h2>
+                    <div class="flex gap-2">
+                        <select id="filterYear" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">전체 연도</option>
+                        </select>
+                        <select id="filterQuarter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">전체 분기</option>
+                            <option value="Q1">Q1</option>
+                            <option value="Q2">Q2</option>
+                            <option value="Q3">Q3</option>
+                            <option value="Q4">Q4</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="resultsSection" class="space-y-4">
                     <p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>
                 </div>
@@ -114,17 +128,34 @@
 
     <script>
         function getState() {
-            return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[],"users":[]}');
+            const defaultState = {"awards":[],"evaluations":[],"users":[]};
+            try {
+                const stored = localStorage.getItem('awardVotingState');
+                return stored ? JSON.parse(stored) : defaultState;
+            } catch (e) {
+                console.error('Error loading state:', e);
+                return defaultState;
+            }
         }
 
         function saveState(state) {
-            localStorage.setItem('awardVotingState', JSON.stringify(state));
+            try {
+                localStorage.setItem('awardVotingState', JSON.stringify(state));
+                console.log('State saved:', state);
+                return true;
+            } catch (e) {
+                console.error('Error saving state:', e);
+                alert('저장 중 오류가 발생했습니다: ' + e.message);
+                return false;
+            }
         }
 
         // 사용자 추가
         document.getElementById('addUserBtn').addEventListener('click', () => {
             const name = document.getElementById('userNameInput').value.trim();
             const pin = document.getElementById('userPinInput').value.trim();
+
+            console.log('Adding user:', name, pin);
 
             if (!name) {
                 alert('이름을 입력해주세요!');
@@ -137,33 +168,43 @@
             }
 
             const state = getState();
+            console.log('Current state:', state);
             
             // 중복 체크
-            if (state.users.some(u => u.name === name)) {
+            if (state.users && state.users.some(u => u.name === name)) {
                 alert('이미 등록된 이름입니다!');
                 return;
             }
 
+            if (!state.users) {
+                state.users = [];
+            }
+
             state.users.push({ name, pin });
-            saveState(state);
-
-            document.getElementById('userNameInput').value = '';
-            document.getElementById('userPinInput').value = '';
-
-            alert('사용자가 추가되었습니다!');
-            loadUsers();
+            
+            if (saveState(state)) {
+                document.getElementById('userNameInput').value = '';
+                document.getElementById('userPinInput').value = '';
+                alert('사용자가 추가되었습니다!');
+                loadUsers();
+            }
         });
 
         // 사용자 목록 불러오기
         function loadUsers() {
             const state = getState();
             const usersList = document.getElementById('usersList');
+            const userCount = document.getElementById('userCount');
             
-            if (state.users.length === 0) {
+            console.log('Loading users:', state.users);
+            
+            if (!state.users || state.users.length === 0) {
                 usersList.innerHTML = '<p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>';
+                userCount.textContent = '0';
                 return;
             }
 
+            userCount.textContent = state.users.length;
             usersList.innerHTML = '';
             
             state.users.forEach(user => {
@@ -171,7 +212,7 @@
                 userElement.className = 'flex justify-between items-center bg-white p-2 rounded border';
                 userElement.innerHTML = `
                     <span class="text-sm">${user.name} (PIN: ${user.pin})</span>
-                    <button onclick="deleteUser('${user.name}')" class="text-red-500 hover:text-red-700 text-sm">삭제</button>
+                    <button onclick="deleteUser('${user.name.replace(/'/g, "\\\'")}')" class="text-red-500 hover:text-red-700 text-sm">삭제</button>
                 `;
                 usersList.appendChild(userElement);
             });
@@ -238,7 +279,33 @@
 
             alert('발표가 추가되었습니다!');
             loadAwards();
+            updateYearFilter();
         });
+
+        // 연도 필터 업데이트
+        function updateYearFilter() {
+            const state = getState();
+            const yearSet = new Set(state.awards.map(a => a.year));
+            const filterYear = document.getElementById('filterYear');
+            
+            const currentValue = filterYear.value;
+            filterYear.innerHTML = '<option value="">전체 연도</option>';
+            
+            Array.from(yearSet).sort().forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year + '년';
+                filterYear.appendChild(option);
+            });
+            
+            if (currentValue) {
+                filterYear.value = currentValue;
+            }
+        }
+
+        // 필터 변경 이벤트
+        document.getElementById('filterYear').addEventListener('change', loadResults);
+        document.getElementById('filterQuarter').addEventListener('change', loadResults);
 
         // 발표 목록 불러오기
         function loadAwards() {
@@ -314,24 +381,45 @@
             
             alert('삭제되었습니다.');
             loadAwards();
+            updateYearFilter();
+            loadResults();
         };
 
         // 결과 집계 표시
         function loadResults() {
             const state = getState();
             const resultsSection = document.getElementById('resultsSection');
+            const filterYear = document.getElementById('filterYear').value;
+            const filterQuarter = document.getElementById('filterQuarter').value;
             
             if (state.evaluations.length === 0) {
                 resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>';
                 return;
             }
 
+            // 필터링된 Award 목록
+            let filteredAwards = state.awards;
+            if (filterYear) {
+                filteredAwards = filteredAwards.filter(a => a.year === filterYear);
+            }
+            if (filterQuarter) {
+                filteredAwards = filteredAwards.filter(a => a.quarter === filterQuarter);
+            }
+
+            if (filteredAwards.length === 0) {
+                resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">해당 조건의 발표가 없습니다</p>';
+                return;
+            }
+
             resultsSection.innerHTML = '';
+            let hasData = false;
             
-            state.awards.forEach(award => {
+            filteredAwards.forEach(award => {
                 const awardEvals = state.evaluations.filter(e => e.awardId === award.id);
                 
                 if (awardEvals.length === 0) return;
+                
+                hasData = true;
                 
                 // 별점 분포 계산
                 const ratingDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, unknown: 0 };
@@ -375,6 +463,29 @@
                             </div>
                         </div>
                         
+                        <!-- 유형별 평가 -->
+                        <div class="bg-white rounded p-3">
+                            <div class="text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span>💪 노력형</span>
+                                    <span class="font-semibold">${typeDist['노력형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>🚀 혁신형</span>
+                                    <span class="font-semibold">${typeDist['혁신형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>🎨 창조형</span>
+                                    <span class="font-semibold">${typeDist['창조형'] || 0}명</span>
+                                </div>
+                                <div class="flex justify-between text-gray-500">
+                                    <span>❓ 잘 모르겠음</span>
+                                    <span class="font-semibold">${typeDist['잘 모르겠음'] || 0}명</span>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- 별점 분포 -->
                         <div class="bg-white rounded p-3">
                             <div class="text-sm font-semibold text-gray-700 mb-2">⭐ 영향력 평가 (평균: ${avgRating}점)</div>
@@ -405,34 +516,15 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- 유형별 평가 -->
-                        <div class="bg-white rounded p-3">
-                            <div class="text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
-                            <div class="space-y-1 text-sm">
-                                <div class="flex justify-between">
-                                    <span>💪 노력형</span>
-                                    <span class="font-semibold">${typeDist['노력형'] || 0}명</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>🚀 혁신형</span>
-                                    <span class="font-semibold">${typeDist['혁신형'] || 0}명</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>🎨 창조형</span>
-                                    <span class="font-semibold">${typeDist['창조형'] || 0}명</span>
-                                </div>
-                                <div class="flex justify-between text-gray-500">
-                                    <span>❓ 잘 모르겠음</span>
-                                    <span class="font-semibold">${typeDist['잘 모르겠음'] || 0}명</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 `;
                 
                 resultsSection.appendChild(resultCard);
             });
+
+            if (!hasData) {
+                resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">해당 조건의 평가 데이터가 없습니다</p>';
+            }
         }
 
         // CSV 다운로드
@@ -467,16 +559,24 @@
             link.click();
         });
 
-        // 1초마다 새로고침
-        setInterval(() => {
-            loadAwards();
-            loadUsers();
-            loadResults();
-        }, 1000);
-        
+        // 초기 로드
         loadAwards();
         loadUsers();
+        updateYearFilter();
         loadResults();
+        
+        // 1초마다 새로고침 (수동 새로고침 방지)
+        setInterval(() => {
+            const currentUsers = getState().users.length;
+            const displayedCount = document.getElementById('userCount').textContent;
+            
+            if (currentUsers.toString() !== displayedCount) {
+                loadUsers();
+            }
+            
+            loadAwards();
+            loadResults();
+        }, 1000);
     </script>
 </body>
 </html>
