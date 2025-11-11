@@ -209,30 +209,40 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC23FHBCtNPXXekdPgeYJZOyHU8SwIHWU",
+            authDomain: "quarterly-award-voting.firebaseapp.com",
+            projectId: "quarterly-award-voting",
+            storageBucket: "quarterly-award-voting.firebasestorage.app",
+            messagingSenderId: "1057289910549",
+            appId: "1:1057289910549:web:e0d79116ad23e3f670911c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         let selectedRating = 0;
         let selectedType = '';
         let currentAwardId = null;
         let currentUser = null;
         let currentAward = null;
         let hasVoted = false;
+        let usersCache = [];
+        let evaluationsCache = [];
 
-        function getState() {
-            return JSON.parse(localStorage.getItem('awardVotingState') || '{"awards":[],"evaluations":[],"users":[]}');
-        }
-
-        function saveState(state) {
-            localStorage.setItem('awardVotingState', JSON.stringify(state));
-        }
-
-        // 사용자 목록 로드 (오름차순 정렬)
-        function loadUsers() {
-            const state = getState();
+        // 사용자 목록 실시간 로드 (오름차순 정렬)
+        onSnapshot(collection(db, 'users'), (snapshot) => {
+            usersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
             const userSelect = document.getElementById('userSelect');
             userSelect.innerHTML = '<option value="">선택하세요</option>';
             
             // 오름차순 정렬
-            const sortedUsers = [...state.users].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            const sortedUsers = [...usersCache].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
             
             sortedUsers.forEach(user => {
                 const option = document.createElement('option');
@@ -240,12 +250,32 @@
                 option.textContent = user.name;
                 userSelect.appendChild(option);
             });
-        }
+        });
+
+        // 평가 목록 실시간 로드
+        onSnapshot(collection(db, 'evaluations'), (snapshot) => {
+            evaluationsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (currentUser && currentAwardId) {
+                checkIfVoted();
+            }
+        });
 
         // 중복 투표 확인
-        function hasAlreadyVoted(userName, awardId) {
-            const state = getState();
-            return state.evaluations.some(e => e.userName === userName && e.awardId === awardId);
+        function checkIfVoted() {
+            hasVoted = evaluationsCache.some(e => e.userName === currentUser && e.awardId === currentAwardId);
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const alreadyVotedAlert = document.getElementById('alreadyVotedAlert');
+            
+            if (hasVoted) {
+                alreadyVotedAlert.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.textContent = '이미 평가 완료';
+            } else {
+                alreadyVotedAlert.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '평가 제출하기';
+            }
         }
 
         // 로그인
@@ -263,8 +293,7 @@
                 return;
             }
 
-            const state = getState();
-            const user = state.users.find(u => u.name === selectedName && u.pin === enteredPin);
+            const user = usersCache.find(u => u.name === selectedName && u.pin === enteredPin);
 
             if (!user) {
                 alert('사용자 정보가 일치하지 않습니다!');
@@ -274,8 +303,58 @@
             currentUser = user.name;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
-            loadCurrentAward();
+            
+            // Award 실시간 감지 시작
+            startAwardListener();
         });
+
+        // Award 실시간 감지
+        function startAwardListener() {
+            const q = query(collection(db, 'awards'), where('isActive', '==', true));
+            
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('noAwardState').classList.remove('hidden');
+                    document.getElementById('evaluationForm').classList.add('hidden');
+                    document.getElementById('successState').classList.add('hidden');
+                    document.getElementById('mainTitle').textContent = '🏆 Award 평가하기';
+                    return;
+                }
+
+                const award = snapshot.docs[0].data();
+                const awardId = snapshot.docs[0].id;
+
+                document.getElementById('mainTitle').textContent = `🏆 ${award.year}년 ${award.quarter} Award 평가하기`;
+
+                // Award가 변경되었으면 입력 초기화
+                if (currentAwardId !== awardId) {
+                    selectedRating = 0;
+                    selectedType = '';
+                    updateStars();
+                    updateRatingDisplay();
+                    document.querySelectorAll('.award-type').forEach(b => {
+                        b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                        b.classList.add('border-gray-200', 'bg-white');
+                    });
+                }
+
+                currentAwardId = awardId;
+                currentAward = award;
+                
+                document.getElementById('awardTitle').textContent = award.title;
+                document.getElementById('impactMaker').textContent = award.impactMaker || '-';
+                document.getElementById('coreMember').textContent = award.coreMember || '-';
+                document.getElementById('specialThanks').textContent = award.specialThanks || '-';
+
+                checkIfVoted();
+
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('noAwardState').classList.add('hidden');
+                document.getElementById('evaluationForm').classList.remove('hidden');
+                document.getElementById('successState').classList.add('hidden');
+            });
+        }
 
         // 로그아웃
         function logout() {
@@ -368,63 +447,8 @@
             });
         });
 
-        // 현재 평가 중인 Award 가져오기
-        function loadCurrentAward() {
-            const state = getState();
-            const award = state.awards.find(a => a.isActive);
-
-            if (!award) {
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('noAwardState').classList.remove('hidden');
-                document.getElementById('evaluationForm').classList.add('hidden');
-                document.getElementById('successState').classList.add('hidden');
-                document.getElementById('mainTitle').textContent = '🏆 Award 평가하기';
-                return;
-            }
-
-            document.getElementById('mainTitle').textContent = `🏆 ${award.year}년 ${award.quarter} Award 평가하기`;
-
-            hasVoted = hasAlreadyVoted(currentUser, award.id);
-
-            if (currentAwardId !== award.id) {
-                selectedRating = 0;
-                selectedType = '';
-                updateStars();
-                updateRatingDisplay();
-                document.querySelectorAll('.award-type').forEach(b => {
-                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
-                    b.classList.add('border-gray-200', 'bg-white');
-                });
-            }
-
-            currentAwardId = award.id;
-            currentAward = award;
-            document.getElementById('awardTitle').textContent = award.title;
-            document.getElementById('impactMaker').textContent = award.impactMaker || '-';
-            document.getElementById('coreMember').textContent = award.coreMember || '-';
-            document.getElementById('specialThanks').textContent = award.specialThanks || '-';
-
-            const submitBtn = document.getElementById('submitBtn');
-            const alreadyVotedAlert = document.getElementById('alreadyVotedAlert');
-            
-            if (hasVoted) {
-                alreadyVotedAlert.classList.remove('hidden');
-                submitBtn.disabled = true;
-                submitBtn.textContent = '이미 평가 완료';
-            } else {
-                alreadyVotedAlert.classList.add('hidden');
-                submitBtn.disabled = false;
-                submitBtn.textContent = '평가 제출하기';
-            }
-
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('noAwardState').classList.add('hidden');
-            document.getElementById('evaluationForm').classList.remove('hidden');
-            document.getElementById('successState').classList.add('hidden');
-        }
-
         // 평가 제출
-        document.getElementById('submitBtn').addEventListener('click', () => {
+        document.getElementById('submitBtn').addEventListener('click', async () => {
             if (hasVoted) {
                 alert('이미 평가를 완료하셨습니다.');
                 return;
@@ -440,40 +464,31 @@
                 return;
             }
 
-            const state = getState();
+            try {
+                await addDoc(collection(db, 'evaluations'), {
+                    awardId: currentAwardId,
+                    rating: selectedRating,
+                    type: selectedType,
+                    userName: currentUser,
+                    timestamp: new Date()
+                });
 
-            state.evaluations.push({
-                awardId: currentAwardId,
-                rating: selectedRating,
-                type: selectedType,
-                userName: currentUser,
-                timestamp: new Date().toISOString()
-            });
+                document.getElementById('evaluationForm').classList.add('hidden');
+                document.getElementById('successState').classList.remove('hidden');
 
-            saveState(state);
-
-            document.getElementById('evaluationForm').classList.add('hidden');
-            document.getElementById('successState').classList.remove('hidden');
-
-            selectedRating = 0;
-            selectedType = '';
-            updateStars();
-            updateRatingDisplay();
-            document.querySelectorAll('.award-type').forEach(b => {
-                b.classList.remove('border-indigo-500', 'bg-indigo-50');
-                b.classList.add('border-gray-200', 'bg-white');
-            });
-        });
-
-        // 1초마다 새로운 Award 확인
-        setInterval(() => {
-            if (currentUser) {
-                loadCurrentAward();
+                selectedRating = 0;
+                selectedType = '';
+                updateStars();
+                updateRatingDisplay();
+                document.querySelectorAll('.award-type').forEach(b => {
+                    b.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    b.classList.add('border-gray-200', 'bg-white');
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('평가 제출 중 오류가 발생했습니다.');
             }
-        }, 1000);
-
-        // 초기화
-        loadUsers();
+        });
     </script>
 </body>
 </html>
