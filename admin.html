@@ -7,61 +7,171 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- 관리자 로그인 화면 -->
+    <div id="adminLoginScreen" class="min-h-screen flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+            <h1 class="text-3xl font-bold text-indigo-600 mb-6 text-center">🔐 관리자 로그인</h1>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">관리자 비밀번호</label>
+                    <input type="password" id="adminPasswordInput" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="비밀번호 입력">
+                </div>
+                <button id="adminLoginBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">
+                    로그인
+                </button>
+                <p class="text-xs text-gray-500 text-center">기본 비밀번호: admin1234</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 메인 화면 -->
+    <div id="adminMainScreen" class="hidden container mx-auto px-4 py-8 max-w-6xl">
         <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h1 class="text-3xl font-bold text-indigo-600 mb-8">🏆 Award 평가 관리자</h1>
-            
-            <!-- 발표 추가 폼 -->
-            <div class="bg-indigo-50 rounded-lg p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">새 발표 추가</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
-                        <input type="text" id="titleInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 고객 경험 개선 프로젝트">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">👑 Impact Maker</label>
-                        <input type="text" id="impactMakerInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 김철수, 이영희">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">💪 Core Member</label>
-                        <input type="text" id="coreMemberInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 박민수, 정수진">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">✨ Special Thanks</label>
-                        <input type="text" id="specialThanksInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="예: 최호영, 강지은">
-                    </div>
-                    
-                    <button id="addAwardBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">
-                        발표 추가하기
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-indigo-600">🏆 Award 평가 관리자</h1>
+                <button id="adminLogoutBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
+                    로그아웃
+                </button>
+            </div>
+
+            <!-- localStorage 마이그레이션 알림 -->
+            <div id="migrationAlert" class="hidden bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-8">
+                <h3 class="text-lg font-bold text-yellow-800 mb-2">⚠️ localStorage 데이터 발견!</h3>
+                <p class="text-yellow-700 mb-4">이전 localStorage 데이터를 Firebase로 마이그레이션할 수 있습니다.</p>
+                <div class="flex gap-3">
+                    <button id="migrateBtn" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition">
+                        마이그레이션 시작
+                    </button>
+                    <button id="skipMigrationBtn" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition">
+                        건너뛰기
                     </button>
                 </div>
             </div>
-            
-            <!-- 발표 목록 -->
-            <div>
-                <h2 class="text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
-                <div id="awardsList" class="space-y-4">
-                    <p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>
+
+            <!-- 탭 메뉴 -->
+            <div class="flex flex-wrap gap-2 mb-6 border-b">
+                <button class="tab-btn px-6 py-3 font-semibold border-b-2 border-indigo-600 text-indigo-600" data-tab="users">
+                    사용자 관리
+                </button>
+                <button class="tab-btn px-6 py-3 font-semibold text-gray-500 hover:text-gray-700" data-tab="awards">
+                    Award 관리
+                </button>
+                <button class="tab-btn px-6 py-3 font-semibold text-gray-500 hover:text-gray-700" data-tab="results">
+                    평가 결과
+                </button>
+            </div>
+
+            <!-- 사용자 관리 탭 -->
+            <div id="usersTab" class="tab-content">
+                <div class="bg-indigo-50 rounded-lg p-6 mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">새 사용자 등록</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="userNameInput" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="이름">
+                        <input type="number" id="userPinInput" inputmode="numeric" maxlength="4" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="4자리 PIN">
+                        <button id="addUserBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg transition">
+                            등록하기
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">등록된 사용자 (<span id="userCount">0</span>명)</h2>
+                    <div id="usersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <p class="text-gray-500 col-span-full text-center py-8">등록된 사용자가 없습니다</p>
+                    </div>
                 </div>
             </div>
-            
-            <!-- 평가 데이터 다운로드 -->
-            <div class="mt-8 pt-8 border-t">
-                <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
-                    <span>📥</span>
-                    <span>평가 데이터 다운로드 (CSV)</span>
-                </button>
+
+            <!-- Award 관리 탭 -->
+            <div id="awardsTab" class="tab-content hidden">
+                <div class="bg-indigo-50 rounded-lg p-6 mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">새 발표 추가</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">연도</label>
+                                <input type="number" id="yearInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="예: 2025">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">분기</label>
+                                <select id="quarterInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">선택하세요</option>
+                                    <option value="Q1">Q1</option>
+                                    <option value="Q2">Q2</option>
+                                    <option value="Q3">Q3</option>
+                                    <option value="Q4">Q4</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">제목</label>
+                            <input type="text" id="titleInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="예: 고객 경험 개선 프로젝트">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">👑 Impact Maker</label>
+                            <input type="text" id="impactMakerInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="예: 김철수, 이영희">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">💪 Core Member</label>
+                            <input type="text" id="coreMemberInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="예: 박민수, 정수진">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">✨ Special Thanks</label>
+                            <input type="text" id="specialThanksInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="예: 최호영, 강지은">
+                        </div>
+                        <button id="addAwardBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">
+                            발표 추가하기
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
+                    <div id="awardsList" class="space-y-4">
+                        <p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 평가 결과 탭 -->
+            <div id="resultsTab" class="tab-content hidden">
+                <div class="bg-indigo-50 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">필터</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">연도</label>
+                            <select id="filterYear" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">전체</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">분기</label>
+                            <select id="filterQuarter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">전체</option>
+                                <option value="Q1">Q1</option>
+                                <option value="Q2">Q2</option>
+                                <option value="Q3">Q3</option>
+                                <option value="Q4">Q4</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition">
+                                📥 CSV 다운로드
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="resultsContainer">
+                    <p class="text-gray-500 text-center py-8">평가 결과가 없습니다</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyC23FHBCtNPXXekdPgeYJZOyHU8SwIHWU",
@@ -75,12 +185,260 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 발표 추가
+        const ADMIN_PASSWORD = "admin1234";
+        let isLoggedIn = false;
+
+        // PIN 입력 4자리 제한
+        document.getElementById('userPinInput').addEventListener('input', (e) => {
+            if (e.target.value.length > 4) {
+                e.target.value = e.target.value.slice(0, 4);
+            }
+        });
+
+        // 관리자 로그인
+        document.getElementById('adminLoginBtn').addEventListener('click', () => {
+            const password = document.getElementById('adminPasswordInput').value;
+
+            if (password === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('adminLoginScreen').classList.add('hidden');
+                document.getElementById('adminMainScreen').classList.remove('hidden');
+
+                // localStorage 데이터 체크
+                checkForLocalStorageData();
+
+                // 데이터 로드
+                loadUsers();
+                loadAwards();
+                loadResults();
+            } else {
+                alert('비밀번호가 올바르지 않습니다!');
+            }
+        });
+
+        // 관리자 로그아웃
+        document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+            isLoggedIn = false;
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('adminLoginScreen').classList.remove('hidden');
+            document.getElementById('adminMainScreen').classList.add('hidden');
+        });
+
+        // localStorage 데이터 확인
+        function checkForLocalStorageData() {
+            const oldData = localStorage.getItem('awardVotingState');
+
+            if (oldData) {
+                console.log('localStorage 데이터 발견!');
+                document.getElementById('migrationAlert').classList.remove('hidden');
+            }
+        }
+
+        // 마이그레이션 시작
+        document.getElementById('migrateBtn').addEventListener('click', async () => {
+            try {
+                const oldData = JSON.parse(localStorage.getItem('awardVotingState'));
+                console.log('마이그레이션 시작:', oldData);
+
+                let migratedCount = 0;
+
+                // 사용자 마이그레이션
+                if (oldData.users && oldData.users.length > 0) {
+                    for (const user of oldData.users) {
+                        try {
+                            await addDoc(collection(db, 'users'), {
+                                name: user.name,
+                                pin: user.pin,
+                                createdAt: new Date()
+                            });
+                            migratedCount++;
+                            console.log('사용자 마이그레이션 완료:', user.name);
+                        } catch (error) {
+                            console.error('사용자 마이그레이션 오류:', user.name, error);
+                        }
+                    }
+                }
+
+                // Award 마이그레이션
+                if (oldData.awards && oldData.awards.length > 0) {
+                    for (const award of oldData.awards) {
+                        try {
+                            await addDoc(collection(db, 'awards'), {
+                                title: award.title,
+                                impactMaker: award.impactMaker || '',
+                                coreMember: award.coreMember || '',
+                                specialThanks: award.specialThanks || '',
+                                year: award.year || '',
+                                quarter: award.quarter || '',
+                                isActive: award.isActive || false,
+                                createdAt: new Date()
+                            });
+                            migratedCount++;
+                            console.log('Award 마이그레이션 완료:', award.title);
+                        } catch (error) {
+                            console.error('Award 마이그레이션 오류:', award.title, error);
+                        }
+                    }
+                }
+
+                // 평가 데이터 마이그레이션
+                if (oldData.evaluations && oldData.evaluations.length > 0) {
+                    for (const evaluation of oldData.evaluations) {
+                        try {
+                            await addDoc(collection(db, 'evaluations'), {
+                                awardId: evaluation.awardId,
+                                userId: evaluation.userId,
+                                userName: evaluation.userName || '',
+                                type: evaluation.type,
+                                rating: evaluation.rating,
+                                timestamp: new Date(evaluation.timestamp)
+                            });
+                            migratedCount++;
+                            console.log('평가 데이터 마이그레이션 완료');
+                        } catch (error) {
+                            console.error('평가 데이터 마이그레이션 오류:', error);
+                        }
+                    }
+                }
+
+                // 마이그레이션 완료 후 localStorage 삭제
+                localStorage.removeItem('awardVotingState');
+                document.getElementById('migrationAlert').classList.add('hidden');
+
+                alert(`마이그레이션 완료!\n총 ${migratedCount}개 항목이 이전되었습니다.`);
+
+                // 데이터 다시 로드
+                loadUsers();
+                loadAwards();
+                loadResults();
+
+            } catch (error) {
+                console.error('마이그레이션 오류:', error);
+                alert('마이그레이션 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+
+        // 마이그레이션 건너뛰기
+        document.getElementById('skipMigrationBtn').addEventListener('click', () => {
+            document.getElementById('migrationAlert').classList.add('hidden');
+        });
+
+        // 탭 전환
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+
+                // 탭 버튼 스타일 변경
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-b-2', 'border-indigo-600', 'text-indigo-600');
+                    b.classList.add('text-gray-500');
+                });
+                btn.classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600');
+                btn.classList.remove('text-gray-500');
+
+                // 탭 컨텐츠 표시/숨김
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            });
+        });
+
+        // 사용자 등록
+        document.getElementById('addUserBtn').addEventListener('click', async () => {
+            const name = document.getElementById('userNameInput').value.trim();
+            const pin = document.getElementById('userPinInput').value.trim();
+
+            console.log('사용자 등록 시도:', { name, pin });
+
+            if (!name || !pin) {
+                alert('이름과 PIN을 모두 입력해주세요!');
+                return;
+            }
+
+            if (pin.length !== 4) {
+                alert('PIN은 4자리 숫자여야 합니다!');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'users'), {
+                    name,
+                    pin,
+                    createdAt: new Date()
+                });
+
+                console.log('사용자 등록 완료:', name);
+
+                document.getElementById('userNameInput').value = '';
+                document.getElementById('userPinInput').value = '';
+
+                alert('사용자가 등록되었습니다!');
+            } catch (error) {
+                console.error('사용자 등록 오류:', error);
+                alert('사용자 등록 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+
+        // 사용자 목록 로드 (실시간)
+        function loadUsers() {
+            onSnapshot(collection(db, 'users'), (snapshot) => {
+                console.log('사용자 목록 로드:', snapshot.size, '명');
+
+                const usersList = document.getElementById('usersList');
+                document.getElementById('userCount').textContent = snapshot.size;
+
+                if (snapshot.empty) {
+                    usersList.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">등록된 사용자가 없습니다</p>';
+                    return;
+                }
+
+                usersList.innerHTML = '';
+
+                // 이름 오름차순 정렬
+                const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                users.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+                users.forEach(({ id, name, pin }) => {
+                    const userElement = document.createElement('div');
+                    userElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4 flex justify-between items-center';
+                    userElement.innerHTML = `
+                        <div>
+                            <p class="font-bold text-gray-800">${name}</p>
+                            <p class="text-sm text-gray-500">PIN: ${pin}</p>
+                        </div>
+                        <button onclick="deleteUser('${id}', '${name}')" class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition">
+                            삭제
+                        </button>
+                    `;
+                    usersList.appendChild(userElement);
+                });
+            });
+        }
+
+        // 사용자 삭제
+        window.deleteUser = async (userId, userName) => {
+            if (!confirm(`"${userName}" 사용자를 삭제하시겠습니까?`)) return;
+
+            try {
+                await deleteDoc(doc(db, 'users', userId));
+                console.log('사용자 삭제 완료:', userName);
+            } catch (error) {
+                console.error('사용자 삭제 오류:', error);
+                alert('사용자 삭제 중 오류가 발생했습니다.');
+            }
+        };
+
+        // Award 추가
         document.getElementById('addAwardBtn').addEventListener('click', async () => {
+            const year = document.getElementById('yearInput').value.trim();
+            const quarter = document.getElementById('quarterInput').value;
             const title = document.getElementById('titleInput').value.trim();
             const impactMaker = document.getElementById('impactMakerInput').value.trim();
             const coreMember = document.getElementById('coreMemberInput').value.trim();
             const specialThanks = document.getElementById('specialThanksInput').value.trim();
+
+            console.log('Award 추가 시도:', { year, quarter, title });
 
             if (!title) {
                 alert('제목을 입력해주세요!');
@@ -89,6 +447,8 @@
 
             try {
                 await addDoc(collection(db, 'awards'), {
+                    year,
+                    quarter,
                     title,
                     impactMaker,
                     coreMember,
@@ -97,61 +457,73 @@
                     createdAt: new Date()
                 });
 
+                console.log('Award 추가 완료:', title);
+
+                document.getElementById('yearInput').value = '';
+                document.getElementById('quarterInput').value = '';
                 document.getElementById('titleInput').value = '';
                 document.getElementById('impactMakerInput').value = '';
                 document.getElementById('coreMemberInput').value = '';
                 document.getElementById('specialThanksInput').value = '';
 
                 alert('발표가 추가되었습니다!');
-                loadAwards();
             } catch (error) {
-                console.error('Error:', error);
-                alert('발표 추가 중 오류가 발생했습니다.');
+                console.error('Award 추가 오류:', error);
+                alert('발표 추가 중 오류가 발생했습니다: ' + error.message);
             }
         });
 
-        // 발표 목록 불러오기
-        async function loadAwards() {
+        // Award 목록 로드 (실시간)
+        function loadAwards() {
             const q = query(collection(db, 'awards'), orderBy('createdAt', 'desc'));
-            const snapshot = await getDocs(q);
-            
-            const awardsList = document.getElementById('awardsList');
-            
-            if (snapshot.empty) {
-                awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
-                return;
-            }
 
-            awardsList.innerHTML = '';
-            
-            snapshot.forEach(doc => {
-                const award = doc.data();
-                const awardElement = document.createElement('div');
-                awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
-                
-                awardElement.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
-                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
-                            ${award.isActive ? '평가 진행 중' : '대기'}
-                        </span>
-                    </div>
-                    <div class="text-sm text-gray-600 space-y-1 mb-4">
-                        <p><span class="font-semibold">👑 Impact Maker:</span> ${award.impactMaker || '-'}</p>
-                        <p><span class="font-semibold">💪 Core Member:</span> ${award.coreMember || '-'}</p>
-                        <p><span class="font-semibold">✨ Special Thanks:</span> ${award.specialThanks || '-'}</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleActive('${doc.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
-                            ${award.isActive ? '평가 종료' : '평가 시작'}
-                        </button>
-                        <button onclick="deleteAward('${doc.id}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
-                            삭제
-                        </button>
-                    </div>
-                `;
-                
-                awardsList.appendChild(awardElement);
+            onSnapshot(q, (snapshot) => {
+                console.log('Award 목록 로드:', snapshot.size, '개');
+
+                const awardsList = document.getElementById('awardsList');
+
+                if (snapshot.empty) {
+                    awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
+                    return;
+                }
+
+                awardsList.innerHTML = '';
+
+                snapshot.forEach(awardDoc => {
+                    const award = awardDoc.data();
+                    const awardElement = document.createElement('div');
+                    awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
+
+                    awardElement.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                                <p class="text-sm text-indigo-600 font-semibold">${award.year || ''} ${award.quarter || ''}</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
+                                ${award.isActive ? '평가 진행 중' : '대기'}
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-600 space-y-1 mb-4">
+                            <p><span class="font-semibold">👑 Impact Maker:</span> ${award.impactMaker || '-'}</p>
+                            <p><span class="font-semibold">💪 Core Member:</span> ${award.coreMember || '-'}</p>
+                            <p><span class="font-semibold">✨ Special Thanks:</span> ${award.specialThanks || '-'}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleActive('${awardDoc.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
+                                ${award.isActive ? '평가 종료' : '평가 시작'}
+                            </button>
+                            <button onclick="resetAwardEvaluations('${awardDoc.id}', '${award.title}')" class="px-4 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition">
+                                초기화
+                            </button>
+                            <button onclick="deleteAward('${awardDoc.id}', '${award.title}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
+                                삭제
+                            </button>
+                        </div>
+                    `;
+
+                    awardsList.appendChild(awardElement);
+                });
             });
         }
 
@@ -160,8 +532,8 @@
             try {
                 // 다른 모든 발표를 비활성화
                 const snapshot = await getDocs(collection(db, 'awards'));
-                const updatePromises = snapshot.docs.map(doc => 
-                    updateDoc(doc.ref, { isActive: false })
+                const updatePromises = snapshot.docs.map(awardDoc =>
+                    updateDoc(awardDoc.ref, { isActive: false })
                 );
                 await Promise.all(updatePromises);
 
@@ -170,47 +542,212 @@
                     await updateDoc(doc(db, 'awards', awardId), { isActive: true });
                 }
 
-                loadAwards();
+                console.log('Award 활성화 상태 변경 완료');
             } catch (error) {
-                console.error('Error:', error);
+                console.error('상태 변경 오류:', error);
                 alert('상태 변경 중 오류가 발생했습니다.');
             }
         };
 
-        // 발표 삭제
-        window.deleteAward = async (awardId) => {
-            if (!confirm('정말 삭제하시겠습니까?')) return;
+        // Award별 평가 초기화
+        window.resetAwardEvaluations = async (awardId, awardTitle) => {
+            if (!confirm(`"${awardTitle}" Award의 모든 평가 데이터를 삭제하시겠습니까?`)) return;
 
             try {
-                await deleteDoc(doc(db, 'awards', awardId));
-                alert('삭제되었습니다.');
-                loadAwards();
+                const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
+                const snapshot = await getDocs(q);
+
+                const deletePromises = snapshot.docs.map(evalDoc =>
+                    deleteDoc(evalDoc.ref)
+                );
+                await Promise.all(deletePromises);
+
+                console.log('평가 데이터 초기화 완료:', awardTitle);
+                alert(`${snapshot.size}개의 평가 데이터가 삭제되었습니다.`);
+
+                loadResults();
             } catch (error) {
-                console.error('Error:', error);
+                console.error('평가 초기화 오류:', error);
+                alert('평가 초기화 중 오류가 발생했습니다.');
+            }
+        };
+
+        // Award 삭제
+        window.deleteAward = async (awardId, awardTitle) => {
+            if (!confirm(`"${awardTitle}" Award를 삭제하시겠습니까?`)) return;
+
+            try {
+                // Award와 관련된 평가 데이터도 함께 삭제
+                const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
+                const evalSnapshot = await getDocs(q);
+
+                const deletePromises = evalSnapshot.docs.map(evalDoc => deleteDoc(evalDoc.ref));
+                await Promise.all(deletePromises);
+
+                await deleteDoc(doc(db, 'awards', awardId));
+
+                console.log('Award 삭제 완료:', awardTitle);
+            } catch (error) {
+                console.error('Award 삭제 오류:', error);
                 alert('삭제 중 오류가 발생했습니다.');
             }
         };
 
-        // CSV 다운로드
-        document.getElementById('downloadBtn').addEventListener('click', async () => {
+        // 평가 결과 로드
+        async function loadResults() {
             try {
                 const awardsSnapshot = await getDocs(collection(db, 'awards'));
                 const evaluationsSnapshot = await getDocs(collection(db, 'evaluations'));
 
                 const awards = {};
-                awardsSnapshot.forEach(doc => {
-                    awards[doc.id] = doc.data().title;
+                const years = new Set();
+
+                awardsSnapshot.forEach(awardDoc => {
+                    const award = awardDoc.data();
+                    awards[awardDoc.id] = award;
+                    if (award.year) years.add(award.year);
                 });
 
-                let csv = 'Award 제목,영향력 점수,Award 유형,평가 시간\n';
+                // 연도 필터 업데이트
+                const yearFilter = document.getElementById('filterYear');
+                yearFilter.innerHTML = '<option value="">전체</option>';
+                Array.from(years).sort().forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearFilter.appendChild(option);
+                });
 
-                evaluationsSnapshot.forEach(doc => {
-                    const eval = doc.data();
-                    const awardTitle = awards[eval.awardId] || '알 수 없음';
-                    const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
-                    const timestamp = eval.timestamp?.toDate().toLocaleString('ko-KR') || '';
-                    
-                    csv += `"${awardTitle}","${rating}","${eval.type}","${timestamp}"\n`;
+                // 결과 표시
+                displayResults(awards, evaluationsSnapshot);
+
+                // 필터 이벤트 리스너
+                document.getElementById('filterYear').addEventListener('change', () => {
+                    displayResults(awards, evaluationsSnapshot);
+                });
+                document.getElementById('filterQuarter').addEventListener('change', () => {
+                    displayResults(awards, evaluationsSnapshot);
+                });
+
+            } catch (error) {
+                console.error('결과 로드 오류:', error);
+            }
+        }
+
+        function displayResults(awards, evaluationsSnapshot) {
+            const filterYear = document.getElementById('filterYear').value;
+            const filterQuarter = document.getElementById('filterQuarter').value;
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            // Award별로 평가 데이터 그룹화
+            const awardResults = {};
+
+            evaluationsSnapshot.forEach(evalDoc => {
+                const evaluation = evalDoc.data();
+                const award = awards[evaluation.awardId];
+
+                if (!award) return;
+
+                // 필터 적용
+                if (filterYear && award.year !== filterYear) return;
+                if (filterQuarter && award.quarter !== filterQuarter) return;
+
+                if (!awardResults[evaluation.awardId]) {
+                    awardResults[evaluation.awardId] = {
+                        award: award,
+                        evaluations: []
+                    };
+                }
+
+                awardResults[evaluation.awardId].evaluations.push(evaluation);
+            });
+
+            if (Object.keys(awardResults).length === 0) {
+                resultsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">평가 결과가 없습니다</p>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+
+            Object.entries(awardResults).forEach(([awardId, { award, evaluations }]) => {
+                // 통계 계산
+                const totalCount = evaluations.length;
+                const ratingSum = evaluations.reduce((sum, e) => sum + (e.rating > 0 ? e.rating : 0), 0);
+                const ratingCount = evaluations.filter(e => e.rating > 0).length;
+                const avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(2) : '없음';
+
+                const typeCount = {
+                    '노력형': evaluations.filter(e => e.type === '노력형').length,
+                    '혁신형': evaluations.filter(e => e.type === '혁신형').length,
+                    '창조형': evaluations.filter(e => e.type === '창조형').length,
+                    '잘 모르겠음': evaluations.filter(e => e.type === '잘 모르겠음').length
+                };
+
+                const resultElement = document.createElement('div');
+                resultElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-6 mb-4';
+                resultElement.innerHTML = `
+                    <div class="mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">${award.title}</h3>
+                        <p class="text-sm text-indigo-600 font-semibold">${award.year || ''} ${award.quarter || ''}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 mb-2">📊 평가 통계</p>
+                            <div class="bg-gray-50 rounded p-3 space-y-1 text-sm">
+                                <p><span class="font-semibold">총 평가 수:</span> ${totalCount}명</p>
+                                <p><span class="font-semibold">평균 영향력:</span> ${avgRating}점</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</p>
+                            <div class="bg-gray-50 rounded p-3 space-y-1 text-sm">
+                                <p>💪 노력형: ${typeCount['노력형']}명</p>
+                                <p>🚀 혁신형: ${typeCount['혁신형']}명</p>
+                                <p>🎨 창조형: ${typeCount['창조형']}명</p>
+                                <p>❓ 잘 모르겠음: ${typeCount['잘 모르겠음']}명</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.appendChild(resultElement);
+            });
+        }
+
+        // CSV 다운로드
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            try {
+                const filterYear = document.getElementById('filterYear').value;
+                const filterQuarter = document.getElementById('filterQuarter').value;
+
+                const awardsSnapshot = await getDocs(collection(db, 'awards'));
+                const evaluationsSnapshot = await getDocs(collection(db, 'evaluations'));
+
+                const awards = {};
+                awardsSnapshot.forEach(awardDoc => {
+                    awards[awardDoc.id] = awardDoc.data();
+                });
+
+                let csv = '연도,분기,Award 제목,평가자,Award 유형,영향력 점수,평가 시간\n';
+
+                evaluationsSnapshot.forEach(evalDoc => {
+                    const evaluation = evalDoc.data();
+                    const award = awards[evaluation.awardId];
+
+                    if (!award) return;
+
+                    // 필터 적용
+                    if (filterYear && award.year !== filterYear) return;
+                    if (filterQuarter && award.quarter !== filterQuarter) return;
+
+                    const year = award.year || '';
+                    const quarter = award.quarter || '';
+                    const awardTitle = award.title || '알 수 없음';
+                    const userName = evaluation.userName || '알 수 없음';
+                    const type = evaluation.type || '';
+                    const rating = evaluation.rating === -1 ? '잘 모르겠음' : evaluation.rating;
+                    const timestamp = evaluation.timestamp?.toDate().toLocaleString('ko-KR') || '';
+
+                    csv += `"${year}","${quarter}","${awardTitle}","${userName}","${type}","${rating}","${timestamp}"\n`;
                 });
 
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -219,13 +756,13 @@
                 link.setAttribute('href', url);
                 link.setAttribute('download', `award_evaluations_${new Date().toISOString().split('T')[0]}.csv`);
                 link.click();
+
+                console.log('CSV 다운로드 완료');
             } catch (error) {
-                console.error('Error:', error);
+                console.error('CSV 다운로드 오류:', error);
                 alert('다운로드 중 오류가 발생했습니다.');
             }
         });
-
-        loadAwards();
     </script>
 </body>
 </html>
