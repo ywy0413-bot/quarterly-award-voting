@@ -8,14 +8,14 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <div class="bg-white rounded-2xl shadow-xl p-8">
-            <h1 class="text-3xl font-bold text-indigo-600 mb-8">🏆 Award 평가 관리자</h1>
+        <div class="bg-white rounded-2xl shadow-xl p-4 md:p-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-indigo-600 mb-6 md:mb-8">🏆 Award 평가 관리자</h1>
             
             <!-- 사용자 등록 섹션 -->
-            <div class="bg-green-50 rounded-lg p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">👥 사용자 등록</h2>
+            <div class="bg-green-50 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">👥 사용자 등록</h2>
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">이름</label>
                             <input type="text" id="userNameInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="예: 김철수">
@@ -40,8 +40,8 @@
             </div>
             
             <!-- 발표 추가 폼 -->
-            <div class="bg-indigo-50 rounded-lg p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">📋 새 발표 추가</h2>
+            <div class="bg-indigo-50 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">📋 새 발표 추가</h2>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -87,22 +87,22 @@
             </div>
             
             <!-- 발표 목록 -->
-            <div>
-                <h2 class="text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
-                <div id="awardsList" class="space-y-4">
+            <div class="mb-6 md:mb-8">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">발표 목록</h2>
+                <div id="awardsList" class="space-y-4 max-h-96 overflow-y-auto pr-2">
                     <p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>
                 </div>
             </div>
             
             <!-- 결과 집계 -->
             <div class="mt-8 pt-8 border-t">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-800">📊 결과 집계</h2>
-                    <div class="flex gap-2">
-                        <select id="filterYear" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <h2 class="text-lg md:text-xl font-bold text-gray-800">📊 결과 집계</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <select id="filterYear" class="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">전체 연도</option>
                         </select>
-                        <select id="filterQuarter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <select id="filterQuarter" class="flex-1 md:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">전체 분기</option>
                             <option value="Q1">Q1</option>
                             <option value="Q2">Q2</option>
@@ -111,7 +111,7 @@
                         </select>
                     </div>
                 </div>
-                <div id="resultsSection" class="space-y-4">
+                <div id="resultsSection" class="space-y-4 max-h-96 overflow-y-auto pr-2">
                     <p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>
                 </div>
             </div>
@@ -141,7 +141,6 @@
         function saveState(state) {
             try {
                 localStorage.setItem('awardVotingState', JSON.stringify(state));
-                console.log('State saved:', state);
                 return true;
             } catch (e) {
                 console.error('Error saving state:', e);
@@ -155,8 +154,6 @@
             const name = document.getElementById('userNameInput').value.trim();
             const pin = document.getElementById('userPinInput').value.trim();
 
-            console.log('Adding user:', name, pin);
-
             if (!name) {
                 alert('이름을 입력해주세요!');
                 return;
@@ -168,9 +165,7 @@
             }
 
             const state = getState();
-            console.log('Current state:', state);
             
-            // 중복 체크
             if (state.users && state.users.some(u => u.name === name)) {
                 alert('이미 등록된 이름입니다!');
                 return;
@@ -195,8 +190,6 @@
             const state = getState();
             const usersList = document.getElementById('usersList');
             const userCount = document.getElementById('userCount');
-            
-            console.log('Loading users:', state.users);
             
             if (!state.users || state.users.length === 0) {
                 usersList.innerHTML = '<p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>';
@@ -282,6 +275,18 @@
             updateYearFilter();
         });
 
+        // 평가 초기화
+        window.resetEvaluations = (awardId) => {
+            if (!confirm('이 Award의 모든 평가 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다!')) return;
+
+            const state = getState();
+            state.evaluations = state.evaluations.filter(e => e.awardId !== awardId);
+            saveState(state);
+            
+            alert('평가 데이터가 초기화되었습니다.');
+            loadResults();
+        };
+
         // 연도 필터 업데이트
         function updateYearFilter() {
             const state = getState();
@@ -327,22 +332,25 @@
                     <div class="flex justify-between items-start mb-2">
                         <div>
                             <span class="text-sm text-gray-500 font-semibold">${award.year} ${award.quarter}</span>
-                            <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                            <h3 class="text-base md:text-lg font-bold text-gray-800">${award.title}</h3>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
-                            ${award.isActive ? '✅ 평가 진행 중' : '대기'}
+                        <span class="px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${award.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
+                            ${award.isActive ? '✅ 진행 중' : '대기'}
                         </span>
                     </div>
-                    <div class="text-sm text-gray-600 space-y-1 mb-4">
+                    <div class="text-xs md:text-sm text-gray-600 space-y-1 mb-4">
                         <p><span class="font-semibold">👑 Impact Maker:</span> ${award.impactMaker || '-'}</p>
                         <p><span class="font-semibold">💪 Core Member:</span> ${award.coreMember || '-'}</p>
                         <p><span class="font-semibold">✨ Special Thanks:</span> ${award.specialThanks || '-'}</p>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleActive('${award.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition">
+                    <div class="flex flex-col md:flex-row gap-2">
+                        <button onclick="toggleActive('${award.id}', ${award.isActive})" class="flex-1 ${award.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white py-2 rounded-lg transition text-sm">
                             ${award.isActive ? '평가 종료' : '평가 시작'}
                         </button>
-                        <button onclick="deleteAward('${award.id}')" class="px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
+                        <button onclick="resetEvaluations('${award.id}')" class="flex-1 md:flex-none md:px-4 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg transition text-sm">
+                            평가 초기화
+                        </button>
+                        <button onclick="deleteAward('${award.id}')" class="flex-1 md:flex-none md:px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg transition text-sm">
                             삭제
                         </button>
                     </div>
@@ -356,12 +364,10 @@
         window.toggleActive = (awardId, currentStatus) => {
             const state = getState();
             
-            // 모든 발표를 비활성화
             state.awards.forEach(award => {
                 award.isActive = false;
             });
 
-            // 선택한 발표만 활성화 (종료가 아닌 경우)
             if (!currentStatus) {
                 const award = state.awards.find(a => a.id === awardId);
                 if (award) award.isActive = true;
@@ -397,7 +403,6 @@
                 return;
             }
 
-            // 필터링된 Award 목록
             let filteredAwards = state.awards;
             if (filterYear) {
                 filteredAwards = filteredAwards.filter(a => a.year === filterYear);
@@ -421,7 +426,6 @@
                 
                 hasData = true;
                 
-                // 별점 분포 계산
                 const ratingDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, unknown: 0 };
                 let ratingSum = 0;
                 let ratingCount = 0;
@@ -438,35 +442,31 @@
                 
                 const avgRating = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(2) : 0;
                 
-                // 유형별 분포 계산
                 const typeDist = {};
                 awardEvals.forEach(e => {
                     typeDist[e.type] = (typeDist[e.type] || 0) + 1;
                 });
                 
-                // 결과 카드 생성
                 const resultCard = document.createElement('div');
-                resultCard.className = 'bg-blue-50 rounded-lg p-6 border-2 border-blue-200';
+                resultCard.className = 'bg-blue-50 rounded-lg p-4 md:p-6 border-2 border-blue-200';
                 
                 resultCard.innerHTML = `
                     <div class="mb-4">
-                        <span class="text-sm text-gray-600 font-semibold">${award.year} ${award.quarter}</span>
-                        <h3 class="text-lg font-bold text-gray-800">${award.title}</h3>
+                        <span class="text-xs md:text-sm text-gray-600 font-semibold">${award.year} ${award.quarter}</span>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800">${award.title}</h3>
                     </div>
                     
                     <div class="space-y-4">
-                        <!-- 평가 인원 -->
                         <div class="bg-white rounded p-3">
                             <div class="flex justify-between items-center">
-                                <span class="text-sm font-semibold text-gray-700">📋 평가 인원</span>
-                                <span class="text-lg font-bold text-indigo-600">${awardEvals.length}명</span>
+                                <span class="text-xs md:text-sm font-semibold text-gray-700">📋 평가 인원</span>
+                                <span class="text-base md:text-lg font-bold text-indigo-600">${awardEvals.length}명</span>
                             </div>
                         </div>
                         
-                        <!-- 유형별 평가 -->
                         <div class="bg-white rounded p-3">
-                            <div class="text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
-                            <div class="space-y-1 text-sm">
+                            <div class="text-xs md:text-sm font-semibold text-gray-700 mb-2">🏆 Award 유형</div>
+                            <div class="space-y-1 text-xs md:text-sm">
                                 <div class="flex justify-between">
                                     <span>💪 노력형</span>
                                     <span class="font-semibold">${typeDist['노력형'] || 0}명</span>
@@ -486,10 +486,9 @@
                             </div>
                         </div>
                         
-                        <!-- 별점 분포 -->
                         <div class="bg-white rounded p-3">
-                            <div class="text-sm font-semibold text-gray-700 mb-2">⭐ 영향력 평가 (평균: ${avgRating}점)</div>
-                            <div class="space-y-1 text-sm">
+                            <div class="text-xs md:text-sm font-semibold text-gray-700 mb-2">⭐ 영향력 평가 (평균: ${avgRating}점)</div>
+                            <div class="space-y-1 text-xs md:text-sm">
                                 <div class="flex justify-between">
                                     <span>⭐ 1점</span>
                                     <span class="font-semibold">${ratingDist[1]}명</span>
@@ -565,7 +564,6 @@
         updateYearFilter();
         loadResults();
         
-        // 1초마다 새로고침 (수동 새로고침 방지)
         setInterval(() => {
             const currentUsers = getState().users.length;
             const displayedCount = document.getElementById('userCount').textContent;
