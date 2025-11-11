@@ -126,31 +126,28 @@
         </div>
     </div>
 
-    <script>
-        function getState() {
-            const defaultState = {"awards":[],"evaluations":[],"users":[]};
-            try {
-                const stored = localStorage.getItem('awardVotingState');
-                return stored ? JSON.parse(stored) : defaultState;
-            } catch (e) {
-                console.error('Error loading state:', e);
-                return defaultState;
-            }
-        }
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-        function saveState(state) {
-            try {
-                localStorage.setItem('awardVotingState', JSON.stringify(state));
-                return true;
-            } catch (e) {
-                console.error('Error saving state:', e);
-                alert('저장 중 오류가 발생했습니다: ' + e.message);
-                return false;
-            }
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyC23FHBCtNPXXekdPgeYJZOyHU8SwIHWU",
+            authDomain: "quarterly-award-voting.firebaseapp.com",
+            projectId: "quarterly-award-voting",
+            storageBucket: "quarterly-award-voting.firebasestorage.app",
+            messagingSenderId: "1057289910549",
+            appId: "1:1057289910549:web:e0d79116ad23e3f670911c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let usersCache = [];
+        let awardsCache = [];
+        let evaluationsCache = [];
 
         // 사용자 추가
-        document.getElementById('addUserBtn').addEventListener('click', () => {
+        document.getElementById('addUserBtn').addEventListener('click', async () => {
             const name = document.getElementById('userNameInput').value.trim();
             const pin = document.getElementById('userPinInput').value.trim();
 
@@ -164,67 +161,70 @@
                 return;
             }
 
-            const state = getState();
-            
-            if (state.users && state.users.some(u => u.name === name)) {
+            // 중복 체크
+            if (usersCache.some(u => u.name === name)) {
                 alert('이미 등록된 이름입니다!');
                 return;
             }
 
-            if (!state.users) {
-                state.users = [];
-            }
+            try {
+                await addDoc(collection(db, 'users'), {
+                    name,
+                    pin,
+                    createdAt: new Date()
+                });
 
-            state.users.push({ name, pin });
-            
-            if (saveState(state)) {
                 document.getElementById('userNameInput').value = '';
                 document.getElementById('userPinInput').value = '';
                 alert('사용자가 추가되었습니다!');
-                loadUsers();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('사용자 추가 중 오류가 발생했습니다.');
             }
         });
 
-        // 사용자 목록 불러오기
-        function loadUsers() {
-            const state = getState();
+        // 사용자 목록 실시간 로드
+        onSnapshot(collection(db, 'users'), (snapshot) => {
+            usersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
             const usersList = document.getElementById('usersList');
             const userCount = document.getElementById('userCount');
             
-            if (!state.users || state.users.length === 0) {
+            if (usersCache.length === 0) {
                 usersList.innerHTML = '<p class="text-gray-500 text-sm">등록된 사용자가 없습니다</p>';
                 userCount.textContent = '0';
                 return;
             }
 
-            userCount.textContent = state.users.length;
+            userCount.textContent = usersCache.length;
             usersList.innerHTML = '';
             
-            state.users.forEach(user => {
+            usersCache.forEach(user => {
                 const userElement = document.createElement('div');
                 userElement.className = 'flex justify-between items-center bg-white p-2 rounded border';
                 userElement.innerHTML = `
                     <span class="text-sm">${user.name} (PIN: ${user.pin})</span>
-                    <button onclick="deleteUser('${user.name.replace(/'/g, "\\\'")}')" class="text-red-500 hover:text-red-700 text-sm">삭제</button>
+                    <button onclick="deleteUser('${user.id}')" class="text-red-500 hover:text-red-700 text-sm">삭제</button>
                 `;
                 usersList.appendChild(userElement);
             });
-        }
+        });
 
         // 사용자 삭제
-        window.deleteUser = (userName) => {
+        window.deleteUser = async (userId) => {
             if (!confirm('정말 삭제하시겠습니까?')) return;
 
-            const state = getState();
-            state.users = state.users.filter(u => u.name !== userName);
-            saveState(state);
-            
-            alert('삭제되었습니다.');
-            loadUsers();
+            try {
+                await deleteDoc(doc(db, 'users', userId));
+                alert('삭제되었습니다.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
         };
 
         // 발표 추가
-        document.getElementById('addAwardBtn').addEventListener('click', () => {
+        document.getElementById('addAwardBtn').addEventListener('click', async () => {
             const year = document.getElementById('yearInput').value.trim();
             const quarter = document.getElementById('quarterInput').value;
             const title = document.getElementById('titleInput').value.trim();
@@ -247,50 +247,48 @@
                 return;
             }
 
-            const state = getState();
-            const newAward = {
-                id: Date.now().toString(),
-                year,
-                quarter,
-                title,
-                impactMaker,
-                coreMember,
-                specialThanks,
-                isActive: false,
-                createdAt: new Date().toISOString()
-            };
+            try {
+                await addDoc(collection(db, 'awards'), {
+                    year,
+                    quarter,
+                    title,
+                    impactMaker,
+                    coreMember,
+                    specialThanks,
+                    isActive: false,
+                    createdAt: new Date()
+                });
 
-            state.awards.push(newAward);
-            saveState(state);
+                document.getElementById('yearInput').value = '';
+                document.getElementById('quarterInput').value = '';
+                document.getElementById('titleInput').value = '';
+                document.getElementById('impactMakerInput').value = '';
+                document.getElementById('coreMemberInput').value = '';
+                document.getElementById('specialThanksInput').value = '';
 
-            document.getElementById('yearInput').value = '';
-            document.getElementById('quarterInput').value = '';
-            document.getElementById('titleInput').value = '';
-            document.getElementById('impactMakerInput').value = '';
-            document.getElementById('coreMemberInput').value = '';
-            document.getElementById('specialThanksInput').value = '';
-
-            alert('발표가 추가되었습니다!');
-            loadAwards();
-            updateYearFilter();
+                alert('발표가 추가되었습니다!');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('발표 추가 중 오류가 발생했습니다.');
+            }
         });
 
-        // 평가 초기화
-        window.resetEvaluations = (awardId) => {
-            if (!confirm('이 Award의 모든 평가 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다!')) return;
+        // 발표 목록 실시간 로드
+        onSnapshot(query(collection(db, 'awards'), orderBy('createdAt', 'desc')), (snapshot) => {
+            awardsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateYearFilter();
+            loadAwards();
+        });
 
-            const state = getState();
-            state.evaluations = state.evaluations.filter(e => e.awardId !== awardId);
-            saveState(state);
-            
-            alert('평가 데이터가 초기화되었습니다.');
+        // 평가 목록 실시간 로드
+        onSnapshot(collection(db, 'evaluations'), (snapshot) => {
+            evaluationsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             loadResults();
-        };
+        });
 
         // 연도 필터 업데이트
         function updateYearFilter() {
-            const state = getState();
-            const yearSet = new Set(state.awards.map(a => a.year));
+            const yearSet = new Set(awardsCache.map(a => a.year));
             const filterYear = document.getElementById('filterYear');
             
             const currentValue = filterYear.value;
@@ -312,19 +310,18 @@
         document.getElementById('filterYear').addEventListener('change', loadResults);
         document.getElementById('filterQuarter').addEventListener('change', loadResults);
 
-        // 발표 목록 불러오기
+        // 발표 목록 표시
         function loadAwards() {
-            const state = getState();
             const awardsList = document.getElementById('awardsList');
             
-            if (state.awards.length === 0) {
+            if (awardsCache.length === 0) {
                 awardsList.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 발표가 없습니다</p>';
                 return;
             }
 
             awardsList.innerHTML = '';
             
-            state.awards.forEach(award => {
+            awardsCache.forEach(award => {
                 const awardElement = document.createElement('div');
                 awardElement.className = 'bg-white border-2 border-gray-200 rounded-lg p-4';
                 
@@ -361,49 +358,67 @@
         }
 
         // 평가 시작/종료
-        window.toggleActive = (awardId, currentStatus) => {
-            const state = getState();
-            
-            state.awards.forEach(award => {
-                award.isActive = false;
-            });
+        window.toggleActive = async (awardId, currentStatus) => {
+            try {
+                // 모든 발표를 비활성화
+                const updatePromises = awardsCache.map(award => 
+                    updateDoc(doc(db, 'awards', award.id), { isActive: false })
+                );
+                await Promise.all(updatePromises);
 
-            if (!currentStatus) {
-                const award = state.awards.find(a => a.id === awardId);
-                if (award) award.isActive = true;
+                // 선택한 발표만 활성화 (종료가 아닌 경우)
+                if (!currentStatus) {
+                    await updateDoc(doc(db, 'awards', awardId), { isActive: true });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('상태 변경 중 오류가 발생했습니다.');
             }
+        };
 
-            saveState(state);
-            loadAwards();
+        // 평가 초기화
+        window.resetEvaluations = async (awardId) => {
+            if (!confirm('이 Award의 모든 평가 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다!')) return;
+
+            try {
+                const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
+                const snapshot = await getDocs(q);
+                
+                const deletePromises = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+                await Promise.all(deletePromises);
+                
+                alert('평가 데이터가 초기화되었습니다.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('초기화 중 오류가 발생했습니다.');
+            }
         };
 
         // 발표 삭제
-        window.deleteAward = (awardId) => {
+        window.deleteAward = async (awardId) => {
             if (!confirm('정말 삭제하시겠습니까?')) return;
 
-            const state = getState();
-            state.awards = state.awards.filter(a => a.id !== awardId);
-            saveState(state);
-            
-            alert('삭제되었습니다.');
-            loadAwards();
-            updateYearFilter();
-            loadResults();
+            try {
+                await deleteDoc(doc(db, 'awards', awardId));
+                alert('삭제되었습니다.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
         };
 
         // 결과 집계 표시
         function loadResults() {
-            const state = getState();
             const resultsSection = document.getElementById('resultsSection');
             const filterYear = document.getElementById('filterYear').value;
             const filterQuarter = document.getElementById('filterQuarter').value;
             
-            if (state.evaluations.length === 0) {
+            if (evaluationsCache.length === 0) {
                 resultsSection.innerHTML = '<p class="text-gray-500 text-center py-8">평가 데이터가 없습니다</p>';
                 return;
             }
 
-            let filteredAwards = state.awards;
+            let filteredAwards = awardsCache;
             if (filterYear) {
                 filteredAwards = filteredAwards.filter(a => a.year === filterYear);
             }
@@ -420,7 +435,7 @@
             let hasData = false;
             
             filteredAwards.forEach(award => {
-                const awardEvals = state.evaluations.filter(e => e.awardId === award.id);
+                const awardEvals = evaluationsCache.filter(e => e.awardId === award.id);
                 
                 if (awardEvals.length === 0) return;
                 
@@ -527,25 +542,23 @@
         }
 
         // CSV 다운로드
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            const state = getState();
-            
-            if (state.evaluations.length === 0) {
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            if (evaluationsCache.length === 0) {
                 alert('아직 평가 데이터가 없습니다.');
                 return;
             }
 
             const awards = {};
-            state.awards.forEach(award => {
+            awardsCache.forEach(award => {
                 awards[award.id] = `${award.year} ${award.quarter} - ${award.title}`;
             });
 
             let csv = '\uFEFF연도-분기,Award 제목,평가자,Award 유형,영향력 점수,평가 시간\n';
 
-            state.evaluations.forEach(eval => {
+            evaluationsCache.forEach(eval => {
                 const awardTitle = awards[eval.awardId] || '알 수 없음';
                 const rating = eval.rating === -1 ? '잘 모르겠음' : eval.rating;
-                const timestamp = new Date(eval.timestamp).toLocaleString('ko-KR');
+                const timestamp = eval.timestamp?.toDate ? eval.timestamp.toDate().toLocaleString('ko-KR') : new Date(eval.timestamp).toLocaleString('ko-KR');
                 
                 csv += `"${awardTitle}","${eval.userName}","${eval.type}","${rating}","${timestamp}"\n`;
             });
@@ -557,24 +570,6 @@
             link.setAttribute('download', `award_evaluations_${new Date().toISOString().split('T')[0]}.csv`);
             link.click();
         });
-
-        // 초기 로드
-        loadAwards();
-        loadUsers();
-        updateYearFilter();
-        loadResults();
-        
-        setInterval(() => {
-            const currentUsers = getState().users.length;
-            const displayedCount = document.getElementById('userCount').textContent;
-            
-            if (currentUsers.toString() !== displayedCount) {
-                loadUsers();
-            }
-            
-            loadAwards();
-            loadResults();
-        }, 1000);
     </script>
 </body>
 </html>
