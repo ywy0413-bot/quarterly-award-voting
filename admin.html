@@ -557,8 +557,8 @@
                 const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
                 const snapshot = await getDocs(q);
 
-                const deletePromises = snapshot.docs.map(evalDoc =>
-                    deleteDoc(evalDoc.ref)
+                const deletePromises = snapshot.docs.map(evaluationDoc =>
+                    deleteDoc(evaluationDoc.ref)
                 );
                 await Promise.all(deletePromises);
 
@@ -579,9 +579,9 @@
             try {
                 // Award와 관련된 평가 데이터도 함께 삭제
                 const q = query(collection(db, 'evaluations'), where('awardId', '==', awardId));
-                const evalSnapshot = await getDocs(q);
+                const evaluationSnapshot = await getDocs(q);
 
-                const deletePromises = evalSnapshot.docs.map(evalDoc => deleteDoc(evalDoc.ref));
+                const deletePromises = evaluationSnapshot.docs.map(evaluationDoc => deleteDoc(evaluationDoc.ref));
                 await Promise.all(deletePromises);
 
                 await deleteDoc(doc(db, 'awards', awardId));
@@ -642,8 +642,8 @@
             // Award별로 평가 데이터 그룹화
             const awardResults = {};
 
-            evaluationsSnapshot.forEach(evalDoc => {
-                const evaluation = evalDoc.data();
+            evaluationsSnapshot.forEach(evaluationDoc => {
+                const evaluation = evaluationDoc.data();
                 const award = awards[evaluation.awardId];
 
                 if (!award) return;
@@ -729,8 +729,8 @@
 
                 let csv = '연도,분기,Award 제목,평가자,Award 유형,영향력 점수,평가 시간\n';
 
-                evaluationsSnapshot.forEach(evalDoc => {
-                    const evaluation = evalDoc.data();
+                evaluationsSnapshot.forEach(evaluationDoc => {
+                    const evaluation = evaluationDoc.data();
                     const award = awards[evaluation.awardId];
 
                     if (!award) return;
