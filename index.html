@@ -292,14 +292,14 @@
                     console.log('활성 Award:', award.title);
 
                     // 이미 평가했는지 확인
-                    const evalQuery = query(
+                    const evaluationQuery = query(
                         collection(db, 'evaluations'),
                         where('awardId', '==', currentAwardId),
                         where('userId', '==', currentUserId)
                     );
-                    const evalSnapshot = await getDocs(evalQuery);
+                    const evaluationSnapshot = await getDocs(evaluationQuery);
 
-                    if (!evalSnapshot.empty) {
+                    if (!evaluationSnapshot.empty) {
                         console.log('이미 평가 완료한 Award');
                         document.getElementById('loadingState').classList.add('hidden');
                         document.getElementById('noAwardState').classList.add('hidden');
